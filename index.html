@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certime — Atestación Inmutable para Libros Contables</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:   #0d1f3c;
+    --blue:   #1a3f7a;
+    --mid:    #2563b0;
+    --bright: #3b82f6;
+    --light:  #eef4ff;
+    --white:  #ffffff;
+    --gray:   #64748b;
+    --border: #dde6f5;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { font-family:'DM Sans',sans-serif; background:var(--white); color:var(--navy); overflow-x:hidden; }
+
+  /* NAV */
+  nav {
+    position:fixed; top:0; left:0; right:0; z-index:200;
+    background:rgba(13,31,60,0.97); backdrop-filter:blur(14px);
+    height:66px; padding:0 6%;
+    display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+  }
+  .nav-logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+  .nav-logo-mark {
+    width:34px; height:34px; border-radius:8px;
+    background:linear-gradient(135deg,#3b82f6,#1a3f7a);
+    display:flex; align-items:center; justify-content:center; font-size:17px;
+  }
+  .nav-logo span { font-family:'Playfair Display',serif; font-size:1.25rem; color:#fff; }
+  .nav-links { display:flex; gap:2rem; list-style:none; }
+  .nav-links a { color:rgba(255,255,255,0.65); text-decoration:none; font-size:0.87rem; font-weight:500; transition:color .2s; }
+  .nav-links a:hover { color:#fff; }
+  .nav-cta { background:var(--bright); color:#fff !important; padding:8px 20px; border-radius:6px; font-weight:600 !important; }
+  .nav-cta:hover { background:#2563eb !important; }
+
+  /* HERO */
+  .hero {
+    min-height:100vh; background:var(--navy);
+    display:flex; align-items:center;
+    padding:100px 6% 80px; position:relative; overflow:hidden;
+  }
+  .hero-bg {
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 75% 65% at 65% 45%, rgba(37,99,176,0.18) 0%, transparent 60%),
+      radial-gradient(ellipse 45% 50% at 10% 85%, rgba(26,63,122,0.35) 0%, transparent 55%);
+  }
+  .hero-grid {
+    position:absolute; inset:0;
+    background-image:linear-gradient(rgba(59,130,246,0.05) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(59,130,246,0.05) 1px,transparent 1px);
+    background-size:56px 56px;
+  }
+  .hero-content { position:relative; z-index:2; max-width:640px; }
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.28);
+    color:#93c5fd; padding:5px 14px; border-radius:100px;
+    font-size:0.75rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    margin-bottom:1.6rem; animation:fadeUp .6s ease both;
+  }
+  .badge-dot { width:6px; height:6px; background:#3b82f6; border-radius:50%; animation:blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.4)} }
+  .hero h1 {
+    font-family:'Playfair Display',serif;
+    font-size:clamp(2.3rem,4.8vw,3.7rem); font-weight:900; color:#fff; line-height:1.11;
+    margin-bottom:1.4rem; animation:fadeUp .6s .1s ease both;
+  }
+  .hero h1 em {
+    font-style:normal;
+    background:linear-gradient(130deg,#93c5fd,#3b82f6);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .hero p { color:rgba(255,255,255,0.6); font-size:1.02rem; line-height:1.78; margin-bottom:2.4rem; animation:fadeUp .6s .2s ease both; }
+  .hero-actions { display:flex; gap:1rem; flex-wrap:wrap; animation:fadeUp .6s .3s ease both; }
+  .btn-primary {
+    background:var(--bright); color:#fff; padding:13px 26px; border-radius:8px;
+    font-weight:600; font-size:.93rem; text-decoration:none;
+    display:inline-flex; align-items:center; gap:7px; transition:all .2s;
+    box-shadow:0 4px 22px rgba(37,99,246,.35);
+  }
+  .btn-primary:hover { background:#2563eb; transform:translateY(-2px); }
+  .btn-ghost {
+    background:transparent; color:rgba(255,255,255,.75); padding:13px 26px;
+    border-radius:8px; font-weight:500; font-size:.93rem; text-decoration:none;
+    border:1px solid rgba(255,255,255,.18); transition:all .2s;
+  }
+  .btn-ghost:hover { border-color:rgba(255,255,255,.5); color:#fff; }
+  .hero-cards {
+    position:absolute; right:6%; top:50%; transform:translateY(-50%);
+    display:flex; flex-direction:column; gap:.9rem; animation:fadeUp .6s .4s ease both;
+  }
+  .hero-card {
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px; padding:14px 22px; backdrop-filter:blur(10px); text-align:center;
+  }
+  .hero-card .num { font-family:'Playfair Display',serif; font-size:1.75rem; color:#60a5fa; line-height:1; }
+  .hero-card .lbl { font-size:.7rem; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.08em; margin-top:3px; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ALERT BAND */
+  .alert-band { background:#fff; border-top:4px solid var(--mid); border-bottom:1px solid var(--border); padding:48px 6%; }
+  .alert-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; gap:2.5rem; }
+  .alert-icon { font-size:2.8rem; flex-shrink:0; }
+  .alert-inner h3 { font-family:'Playfair Display',serif; font-size:1.25rem; color:var(--navy); margin-bottom:6px; }
+  .alert-inner p { font-size:.87rem; color:var(--gray); line-height:1.7; }
+  .alert-inner p strong { color:var(--navy); }
+
+  /* SECTIONS */
+  .section { padding:90px 6%; }
+  .sec-label { font-size:.73rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; margin-bottom:.8rem; }
+  .sec-title { font-family:'Playfair Display',serif; font-size:clamp(1.7rem,3.2vw,2.6rem); font-weight:700; line-height:1.2; margin-bottom:1rem; }
+  .sec-sub { color:var(--gray); font-size:.98rem; line-height:1.78; max-width:540px; }
+
+  /* PROBLEMA — fondo navy */
+  .problema { background:var(--navy); }
+  .problema .sec-label { color:#60a5fa; }
+  .problema .sec-title { color:#fff; }
+  .problema .sec-sub { color:rgba(255,255,255,.55); }
+  .problema-inner { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center; max-width:1180px; margin:0 auto; }
+  .prob-cards { display:flex; flex-direction:column; gap:1rem; }
+  .prob-card {
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+    border-left:3px solid var(--bright); border-radius:10px; padding:18px 22px;
+    opacity:0; transform:translateX(24px); transition:all .5s ease;
+  }
+  .prob-card.visible { opacity:1; transform:translateX(0); }
+  .prob-card.red  { border-left-color:#f87171; }
+  .prob-card.gold { border-left-color:#fbbf24; }
+  .prob-card h4 { font-size:.88rem; font-weight:600; color:#fff; margin-bottom:5px; }
+  .prob-card p  { font-size:.82rem; color:rgba(255,255,255,.5); line-height:1.62; }
+
+  /* CÓMO FUNCIONA — fondo blanco */
+  .como { background:var(--white); }
+  .como .sec-label { color:var(--mid); }
+  .como .sec-title { color:var(--navy); }
+  .como-inner { max-width:980px; margin:0 auto; text-align:center; }
+  .como-inner .sec-sub { margin:0 auto 3.5rem; }
+  .steps { display:grid; grid-template-columns:repeat(4,1fr); gap:1.5rem; position:relative; }
+  .steps::before {
+    content:''; position:absolute; top:35px; left:12.5%; right:12.5%; height:2px;
+    background:linear-gradient(90deg,var(--mid),var(--bright)); z-index:0;
+  }
+  .step { position:relative; z-index:1; opacity:0; transform:translateY(20px); transition:all .5s ease; }
+  .step.visible { opacity:1; transform:translateY(0); }
+  .step-icon {
+    width:70px; height:70px; border-radius:50%; margin:0 auto 1.1rem;
+    background:linear-gradient(135deg,var(--mid),var(--navy));
+    display:flex; align-items:center; justify-content:center; font-size:1.5rem;
+    box-shadow:0 4px 18px rgba(37,99,176,.3);
+  }
+  .step h4 { font-size:.9rem; font-weight:600; color:var(--navy); margin-bottom:7px; }
+  .step p  { font-size:.81rem; color:var(--gray); line-height:1.65; }
+
+  /* TECNOLOGÍA — fondo light */
+  .tech { background:var(--light); }
+  .tech .sec-label { color:var(--mid); }
+  .tech .sec-title { color:var(--navy); }
+  .tech-inner { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center; max-width:1180px; margin:0 auto; }
+  .feat-list { display:flex; flex-direction:column; gap:1.4rem; margin-top:2rem; }
+  .feat-row { display:flex; align-items:flex-start; gap:1rem; opacity:0; transform:translateX(-20px); transition:all .5s ease; }
+  .feat-row.visible { opacity:1; transform:translateX(0); }
+  .feat-icon {
+    width:42px; height:42px; flex-shrink:0; border-radius:10px;
+    background:linear-gradient(135deg,var(--mid),var(--navy));
+    display:flex; align-items:center; justify-content:center; font-size:1.1rem;
+  }
+  .feat-row h4 { font-size:.88rem; font-weight:600; color:var(--navy); margin-bottom:4px; }
+  .feat-row p  { font-size:.81rem; color:var(--gray); line-height:1.65; }
+  .cert-box {
+    background:var(--navy); border-radius:14px; padding:1.8rem;
+    font-size:.77rem; line-height:2; color:rgba(255,255,255,.65);
+    box-shadow:0 8px 32px rgba(13,31,60,.18);
+  }
+  .cert-box .cl { color:#60a5fa; }
+  .cert-box .cg { color:#4ade80; }
+  .cert-box .cy { color:#fbbf24; }
+  .cert-box .cd { color:rgba(255,255,255,.3); }
+
+  /* PLANES — fondo blanco */
+  .planes { background:var(--white); }
+  .planes .sec-label { color:var(--mid); }
+  .planes .sec-title { color:var(--navy); }
+  .planes-inner { max-width:1080px; margin:0 auto; text-align:center; }
+  .plans-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; margin-top:3rem; }
+  .plan {
+    background:var(--white); border:1.5px solid var(--border); border-radius:16px;
+    padding:2rem; text-align:left; position:relative; transition:all .3s;
+    opacity:0; transform:translateY(20px);
+  }
+  .plan.visible { opacity:1; transform:translateY(0); }
+  .plan:hover { transform:translateY(-4px); box-shadow:0 10px 36px rgba(37,99,176,.12); }
+  .plan.featured { background:var(--navy); border-color:var(--mid); box-shadow:0 6px 30px rgba(37,99,176,.22); }
+  .plan-badge {
+    position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+    background:var(--mid); color:#fff;
+    font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    padding:4px 14px; border-radius:100px; white-space:nowrap;
+  }
+  .plan-tier { font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--mid); margin-bottom:.4rem; }
+  .plan.featured .plan-tier { color:#60a5fa; }
+  .plan-price { font-family:'Playfair Display',serif; font-size:2.1rem; font-weight:700; color:var(--navy); line-height:1; margin-bottom:3px; }
+  .plan.featured .plan-price { color:#fff; }
+  .plan-price sup { font-size:.95rem; font-family:'DM Sans',sans-serif; vertical-align:super; }
+  .plan-mo { font-size:.78rem; color:var(--gray); margin-bottom:1.1rem; }
+  .plan.featured .plan-mo { color:rgba(255,255,255,.45); }
+  .plan-desc { font-size:.83rem; color:var(--gray); line-height:1.62; padding-bottom:1.2rem; margin-bottom:1.2rem; border-bottom:1px solid var(--border); }
+  .plan.featured .plan-desc { color:rgba(255,255,255,.55); border-bottom-color:rgba(255,255,255,.1); }
+  .plan ul { list-style:none; display:flex; flex-direction:column; gap:.55rem; margin-bottom:1.6rem; }
+  .plan ul li { font-size:.83rem; color:var(--navy); display:flex; align-items:center; gap:7px; }
+  .plan.featured ul li { color:rgba(255,255,255,.8); }
+  .plan ul li::before { content:'✓'; color:var(--mid); font-weight:700; flex-shrink:0; }
+  .plan.featured ul li::before { color:#60a5fa; }
+  .btn-plan { display:block; text-align:center; padding:11px; border-radius:8px; font-weight:600; font-size:.86rem; text-decoration:none; border:2px solid var(--mid); color:var(--mid); transition:all .2s; }
+  .btn-plan:hover { background:var(--mid); color:#fff; }
+  .plan.featured .btn-plan { background:var(--bright); color:#fff; border-color:var(--bright); }
+  .plan.featured .btn-plan:hover { background:#2563eb; }
+
+  /* CTA FINAL */
+  .cta-section {
+    background:linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+    padding:96px 6%; text-align:center; position:relative; overflow:hidden;
+  }
+  .cta-section::before {
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(ellipse 60% 80% at 50% 50%, rgba(59,130,246,.15) 0%, transparent 70%);
+  }
+  .cta-inner { position:relative; z-index:1; max-width:580px; margin:0 auto; }
+  .cta-inner h2 { font-family:'Playfair Display',serif; font-size:clamp(1.75rem,3.2vw,2.7rem); color:#fff; margin-bottom:1rem; line-height:1.2; }
+  .cta-inner p { color:rgba(255,255,255,.6); font-size:.98rem; line-height:1.75; margin-bottom:2.4rem; }
+
+  /* FOOTER */
+  footer { background:#07111f; padding:36px 6%; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; }
+  .foot-logo { font-family:'Playfair Display',serif; color:#fff; font-size:1.1rem; }
+  footer p { color:rgba(255,255,255,.3); font-size:.78rem; }
+  .foot-links { display:flex; gap:1.4rem; }
+  .foot-links a { color:rgba(255,255,255,.35); text-decoration:none; font-size:.78rem; transition:color .2s; }
+  .foot-links a:hover { color:rgba(255,255,255,.8); }
+
+  @media(max-width:768px){
+    .nav-links { display:none; }
+    .hero-cards { display:none; }
+    .problema-inner,.tech-inner { grid-template-columns:1fr; gap:2.5rem; }
+    .steps { grid-template-columns:repeat(2,1fr); }
+    .steps::before { display:none; }
+    .plans-grid { grid-template-columns:1fr; }
+    .alert-inner { flex-direction:column; text-align:center; }
+    footer { flex-direction:column; text-align:center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">🛡️</div>
+    <span>Certime</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#problema">Problema</a></li>
+    <li><a href="#como">Cómo funciona</a></li>
+    <li><a href="#tech">Tecnología</a></li>
+    <li><a href="#planes">Planes</a></li>
+    <li><a href="CERTIME_CLAUDE_OFICIAL.html" class="nav-cta">Ingresar al sistema →</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><div class="badge-dot"></div>Syscoin NEVM · Blockchain · Perú</div>
+    <h1>Tu contabilidad protegida con evidencia <em>inmutable</em></h1>
+    <p>Con el D.S. 303-2025-EF, la SUNAT accede remotamente a tus sistemas. Certime registra la huella digital de tus libros en blockchain antes de cualquier auditoría — una prueba matemática que nadie puede alterar.</p>
+    <div class="hero-actions">
+      <a href="CERTIME_CLAUDE_OFICIAL.html" class="btn-primary">🔒 Probar la Demo →</a>
+      <a href="#como" class="btn-ghost">¿Cómo funciona?</a>
+    </div>
+  </div>
+  <div class="hero-cards">
+    <div class="hero-card"><div class="num">0.6%</div><div class="lbl">Multa máxima SUNAT</div></div>
+    <div class="hero-card"><div class="num">&lt; 5s</div><div class="lbl">Tiempo de sellado</div></div>
+    <div class="hero-card"><div class="num">∞</div><div class="lbl">Validez del certificado</div></div>
+  </div>
+</section>
+
+<!-- ALERT -->
+<div class="alert-band">
+  <div class="alert-inner">
+    <div class="alert-icon">📋</div>
+    <div>
+      <h3>D.S. 303-2025-EF ya está en vigor</h3>
+      <p>La SUNAT modernizó su fiscalización con acceso remoto. El <strong>Art. 13.8</strong> establece que cualquier falla de integridad es responsabilidad exclusiva del contribuyente — incluso si la SUNAT accedió a tus sistemas. Certime es tu escudo legal.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PROBLEMA -->
+<section class="section problema" id="problema">
+  <div class="problema-inner">
+    <div>
+      <div class="sec-label">El Problema</div>
+      <h2 class="sec-title">La trampa de la integridad contable</h2>
+      <p class="sec-sub">La normativa crea una responsabilidad asimétrica: la SUNAT accede a tus sistemas pero tú respondes por cualquier discrepancia. Sin evidencia matemática, estás expuesto.</p>
+    </div>
+    <div class="prob-cards">
+      <div class="prob-card red"><h4>⚠ Art. 13.8 — Responsabilidad unilateral</h4><p>Aunque la SUNAT no puede modificar datos (Art. 13.5), cualquier falla de integridad es tu responsabilidad exclusiva.</p></div>
+      <div class="prob-card gold"><h4>💸 Multas de hasta 0.6% de ingresos netos</h4><p>Sin prueba de integridad, una disputa con la SUNAT puede derivar en sanciones económicas significativas.</p></div>
+      <div class="prob-card"><h4>☁ La nube y discos físicos no son suficientes</h4><p>El almacenamiento tradicional puede ser modificado. No genera evidencia matemática de inalterabilidad.</p></div>
+      <div class="prob-card"><h4>🔍 Fiscalización digital en expansión</h4><p>Las empresas sin protección proactiva quedan expuestas ante cualquier inspección remota de la SUNAT.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section class="section como" id="como">
+  <div class="como-inner">
+    <div class="sec-label">Flujo de uso</div>
+    <h2 class="sec-title">Cuatro pasos. Un certificado inmutable.</h2>
+    <p class="sec-sub">Diseñado para contadores. Sin jerga técnica. Tu libro queda protegido en menos de un minuto.</p>
+    <div class="steps">
+      <div class="step"><div class="step-icon">📂</div><h4>1. Carga local</h4><p>Selecciona tu libro electrónico (SIRE, Diario, etc.) desde tu equipo.</p></div>
+      <div class="step"><div class="step-icon">🔐</div><h4>2. Hashing local</h4><p>Certime genera una huella SHA-256 única. El archivo nunca sale de tu servidor.</p></div>
+      <div class="step"><div class="step-icon">⛓</div><h4>3. Registro inmutable</h4><p>El hash se ancla en la NEVM de Syscoin. Se genera un TXID permanente en blockchain.</p></div>
+      <div class="step"><div class="step-icon">📜</div><h4>4. Certificado</h4><p>Recibes un Certificado de Integridad verificable. Tu defensa ante la SUNAT, lista.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TECNOLOGÍA -->
+<section class="section tech" id="tech">
+  <div class="tech-inner">
+    <div>
+      <div class="sec-label">Tecnología</div>
+      <h2 class="sec-title">Seguridad de Bitcoin. Costo de red.</h2>
+      <p class="sec-sub">Certime aprovecha la NEVM de Syscoin — red que hereda la protección del minado de Bitcoin con costos mínimos por transacción.</p>
+      <div class="feat-list">
+        <div class="feat-row"><div class="feat-icon">₿</div><div><h4>Merge-mining con Bitcoin</h4><p>Syscoin es minada junto a Bitcoin, heredando su hashrate y resistencia a ataques del 51%.</p></div></div>
+        <div class="feat-row"><div class="feat-icon">💰</div><div><h4>Costos mínimos</h4><p>Sella toda tu contabilidad mensual por una fracción del costo de una sola multa tributaria.</p></div></div>
+        <div class="feat-row"><div class="feat-icon">🔒</div><div><h4>Privacidad total</h4><p>Solo el hash SHA-256 va a blockchain. Tus documentos originales nunca salen de tu entorno.</p></div></div>
+        <div class="feat-row"><div class="feat-icon">♾</div><div><h4>Evidencia permanente</h4><p>La prueba persiste aunque tus servidores fallen. Descentralizada e inmutable para siempre.</p></div></div>
+      </div>
+    </div>
+    <div class="cert-box">
+      <div class="cd">// Certificado de Integridad Certime</div><br>
+      <div class="cl">documento: <span style="color:#e2e8f0">"Libro_Diario_2025.xlsx"</span></div>
+      <div class="cl">hash_sha256: <span style="color:#4ade80">"a3f4b2c9d1e7..."</span></div>
+      <div class="cl">timestamp: <span style="color:#e2e8f0">"2025-03-05T14:32:11Z"</span></div>
+      <div class="cl">red: <span style="color:#fbbf24">"Syscoin NEVM Testnet"</span></div>
+      <div class="cl">chain_id: <span style="color:#fbbf24">5700</span></div>
+      <div class="cl">txid: <span style="color:#60a5fa">"0x7a8b3c1d..."</span></div><br>
+      <div class="cg">✓ Integridad verificada</div>
+      <div class="cg">✓ Anclado en Bitcoin merge-mining</div>
+      <div class="cg">✓ Válido ante SUNAT Art. 13.8</div><br>
+      <div class="cd">// Verificar: tanenbaum.io/tx/0x7a8b3c1d...</div>
+    </div>
+  </div>
+</section>
+
+<!-- PLANES -->
+<section class="section planes" id="planes">
+  <div class="planes-inner">
+    <div class="sec-label">Suscripción</div>
+    <h2 class="sec-title">Planes para cada tamaño de empresa</h2>
+    <p class="sec-sub" style="margin:0 auto">Una multa SUNAT puede costar miles de soles. Certime te protege por mucho menos.</p>
+    <div class="plans-grid">
+      <div class="plan">
+        <div class="plan-tier">Starter</div>
+        <div class="plan-price"><sup>S/</sup>49</div>
+        <div class="plan-mo">por mes</div>
+        <div class="plan-desc">Para contadores independientes y microempresas.</div>
+        <ul><li>Hasta 50 documentos / mes</li><li>1 usuario</li><li>Certificado descargable</li><li>Soporte por email</li><li>Panel de historial básico</li></ul>
+        <a href="#" class="btn-plan">Consultar precio</a>
+      </div>
+      <div class="plan featured">
+        <div class="plan-badge">Más popular</div>
+        <div class="plan-tier">Profesional</div>
+        <div class="plan-price"><sup>S/</sup>129</div>
+        <div class="plan-mo">por mes</div>
+        <div class="plan-desc">Para estudios contables y PYMEs con múltiples clientes.</div>
+        <ul><li>Hasta 300 documentos / mes</li><li>5 usuarios</li><li>Historial de auditoría completo</li><li>Soporte prioritario</li><li>Exportación PDF de reportes</li><li>Dashboard avanzado</li></ul>
+        <a href="#" class="btn-plan">Consultar precio</a>
+      </div>
+      <div class="plan">
+        <div class="plan-tier">Empresarial</div>
+        <div class="plan-price"><sup>S/</sup>349</div>
+        <div class="plan-mo">por mes</div>
+        <div class="plan-desc">Para medianas y grandes empresas con alto volumen.</div>
+        <ul><li>Documentos ilimitados</li><li>Usuarios ilimitados</li><li>Integración vía API</li><li>Soporte dedicado 24/7</li><li>SLA garantizado</li><li>Onboarding personalizado</li></ul>
+        <a href="#" class="btn-plan">Consultar precio</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-section" id="demo">
+  <div class="cta-inner">
+    <h2>Tu defensa ante la SUNAT empieza hoy</h2>
+    <p>No esperes una auditoría. Prueba Certime ahora mismo con nuestra demo en testnet — sin costo, sin compromiso.</p>
+    <a href="CERTIME_CLAUDE_OFICIAL.html" class="btn-primary" style="font-size:1rem;padding:15px 34px">🔒 Ingresar a la Demo →</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo">Certime</div>
+  <p>© 2025 Certime · Atestación inmutable para libros contables · Perú</p>
+  <div class="foot-links"><a href="#">Privacidad</a><a href="#">Términos</a><a href="#">Contacto</a></div>
+</footer>
+
+<script>
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) setTimeout(() => e.target.classList.add('visible'), e.target.dataset.d || 0);
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.prob-card,.step,.feat-row,.plan').forEach((el, i) => {
+    el.dataset.d = (i % 4) * 110;
+    obs.observe(el);
+  });
+</script>
+</body>
+</html>

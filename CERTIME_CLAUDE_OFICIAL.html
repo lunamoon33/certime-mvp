@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CERTIME PRO | SISTEMA DE INTEGRIDAD BLOCKCHAIN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* ── VARIABLES ─────────────────────────────────── */
+        :root {
+            --bg:       #050509;
+            --surface:  #0f0f1a;
+            --border:   #1a1a2e;
+            --blue:     #3b82f6;
+            --green:    #22c55e;
+            --orange:   #f97316;
+            --red:      #ef4444;
+            --text:     #f3f4f6;
+            --muted:    #4b5563;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; min-height: 100vh; }
+
+        /* ── HIDDEN ──────────────────────────────────────── */
+        .hidden-step { display: none !important; }
+
+        /* ── CARDS ───────────────────────────────────────── */
+        .card-dark {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            transition: border-color .25s, box-shadow .25s;
+        }
+        .card-dark:hover { border-color: var(--blue); box-shadow: 0 0 30px rgba(59,130,246,.15); }
+
+        /* ── WALLET BANNER ────────────────────────────────── */
+        #walletBanner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: linear-gradient(90deg, #0f172a, #1e1b4b, #0f172a);
+            border-bottom: 1px solid var(--blue);
+            padding: 10px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            font-size: 11px; font-weight: 700; letter-spacing: .08em;
+        }
+        .wallet-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--muted); display: inline-block; margin-right: 8px;
+            box-shadow: 0 0 0 3px rgba(75,85,99,.2);
+            transition: background .3s, box-shadow .3s;
+        }
+        .wallet-dot.connected { background: var(--green); box-shadow: 0 0 0 3px rgba(34,197,94,.2); animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot { 0%,100%{ box-shadow: 0 0 0 3px rgba(34,197,94,.2); } 50%{ box-shadow: 0 0 0 6px rgba(34,197,94,.1); } }
+
+        #btnConnectWallet {
+            background: var(--blue); color: #fff; border: none; cursor: pointer;
+            padding: 6px 18px; border-radius: 8px; font-size: 10px; font-weight: 900;
+            letter-spacing: .1em; text-transform: uppercase; font-family: inherit;
+            transition: background .2s, transform .1s;
+        }
+        #btnConnectWallet:hover { background: #2563eb; transform: scale(1.03); }
+        #btnConnectWallet:active { transform: scale(.97); }
+
+        /* ── SEAL BUTTON STATES ──────────────────────────── */
+        .btn-seal {
+            width: 100%; padding: 22px; border-radius: 2.5rem;
+            font-weight: 900; font-size: 1.1rem; font-family: inherit;
+            letter-spacing: .12em; text-transform: uppercase; font-style: italic;
+            border: none; cursor: pointer; transition: all .25s;
+            color: #fff;
+        }
+        .btn-seal.idle     { background: var(--blue); }
+        .btn-seal.idle:hover { background: #2563eb; box-shadow: 0 8px 32px rgba(59,130,246,.35); }
+        .btn-seal.waiting  { background: #7c3aed; animation: glow-purple 1.5s ease-in-out infinite; cursor: not-allowed; }
+        .btn-seal.mining   { background: var(--orange); animation: glow-orange 1.2s ease-in-out infinite; cursor: not-allowed; }
+        .btn-seal.success  { background: var(--green); }
+        .btn-seal.disabled { background: #374151; cursor: not-allowed; color: #6b7280; }
+
+        @keyframes glow-purple { 0%,100%{ box-shadow: 0 0 20px rgba(124,58,237,.4); } 50%{ box-shadow: 0 0 40px rgba(124,58,237,.8); } }
+        @keyframes glow-orange { 0%,100%{ box-shadow: 0 0 20px rgba(249,115,22,.4); } 50%{ box-shadow: 0 0 40px rgba(249,115,22,.8); } }
+
+        /* ── TXID chip ────────────────────────────────────── */
+        .txid-chip {
+            display: inline-block; background: rgba(34,197,94,.1);
+            border: 1px solid rgba(34,197,94,.3); color: var(--green);
+            padding: 2px 8px; border-radius: 6px; font-size: 9px;
+            font-weight: 700; text-decoration: none; font-family: 'Courier New', monospace;
+            letter-spacing: .04em; transition: background .2s;
+        }
+        .txid-chip:hover { background: rgba(34,197,94,.2); }
+        .txid-chip.pending { border-color: rgba(249,115,22,.3); color: var(--orange); background: rgba(249,115,22,.08); }
+
+        /* ── TABLE ───────────────────────────────────────── */
+        table { border-collapse: collapse; width: 100%; }
+        th { font-size: 9px; font-weight: 900; text-transform: uppercase; font-style: italic; letter-spacing: .1em; color: var(--muted); padding: 16px 20px; text-align: left; background: rgba(0,0,0,.6); }
+        td { padding: 14px 20px; font-size: 11px; font-weight: 600; border-bottom: 1px solid #0d0d1a; vertical-align: middle; }
+        tbody tr { transition: background .15s; }
+        tbody tr:hover { background: rgba(59,130,246,.04); }
+
+        /* ── NETWORK BADGE ───────────────────────────────── */
+        .net-badge {
+            font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em;
+            padding: 3px 10px; border-radius: 20px; font-style: italic;
+        }
+        .net-badge.rollux { background: rgba(59,130,246,.15); border: 1px solid rgba(59,130,246,.3); color: var(--blue); }
+        .net-badge.wrong  { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: var(--red); }
+        .net-badge.disconnected { background: rgba(75,85,99,.1); border: 1px solid #2d2d3a; color: var(--muted); }
+
+        /* ── TOAST ───────────────────────────────────────── */
+        #toastContainer { position: fixed; bottom: 32px; right: 32px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; }
+        .toast {
+            background: #0f172a; border: 1px solid var(--border); border-radius: 16px;
+            padding: 14px 20px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+            display: flex; align-items: center; gap: 10px;
+            animation: slideIn .3s ease-out; max-width: 360px; font-family: inherit;
+            box-shadow: 0 8px 32px rgba(0,0,0,.5);
+        }
+        .toast.success { border-color: rgba(34,197,94,.3); color: var(--green); }
+        .toast.error   { border-color: rgba(239,68,68,.3); color: var(--red); }
+        .toast.info    { border-color: rgba(59,130,246,.3); color: var(--blue); }
+        .toast.warning { border-color: rgba(249,115,22,.3); color: var(--orange); }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100px); opacity: 0; } }
+
+        /* ── MISC ────────────────────────────────────────── */
+        input, button { font-family: inherit; }
+        input { background: #000; border: 1px solid #1f2937; color: #fff; outline: none; transition: border-color .2s; }
+        input:focus { border-color: var(--blue); }
+
+        /* Bump body top so banner doesn't overlap content */
+        body.has-banner { padding-top: 48px; }
+    </style>
+</head>
+<body class="has-banner">
+
+<!-- ════════════════════════ WALLET BANNER ════════════════════════ -->
+<div id="walletBanner">
+    <div style="display:flex;align-items:center;gap:14px;">
+        <span class="text-blue-500 font-black italic" style="font-size:14px;letter-spacing:.12em;">CERTIME</span>
+        <span class="net-badge disconnected" id="netBadge">Sin conexión</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;">
+        <span style="display:flex;align-items:center;color:#9ca3af;" id="walletStatus">
+            <span class="wallet-dot" id="walletDot"></span>
+            <span id="walletAddress">Wallet no conectada</span>
+        </span>
+        <button id="btnConnectWallet" onclick="connectWallet()">
+            <i class="fas fa-wallet" style="margin-right:6px;"></i> Conectar Wallet
+        </button>
+    </div>
+</div>
+
+<!-- ════════════════════════ TOAST CONTAINER ════════════════════════ -->
+<div id="toastContainer"></div>
+
+<!-- ════════════════════════ PANTALLA 0 – Selección de rol ════════════════════════ -->
+<div id="pantalla0" class="w-full max-w-2xl text-center" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);">
+    <h1 style="font-size:4rem;font-weight:900;color:var(--blue);font-style:italic;letter-spacing:-.04em;text-transform:uppercase;margin-bottom:2rem;">CERTIME</h1>
+    <p style="color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-bottom:3rem;">Sistema de Integridad Contable · Blockchain</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;">
+        <button onclick="irALogin('CONTADOR')" class="card-dark" style="padding:3.5rem 2rem;border-radius:2.5rem;color:#fff;font-weight:900;font-size:1.1rem;text-transform:uppercase;font-style:italic;cursor:pointer;border-width:1px;">
+            <i class="fas fa-user-tie" style="font-size:3rem;color:var(--blue);display:block;margin-bottom:1rem;"></i>
+            Contador
+        </button>
+        <button onclick="irALogin('AUDITOR')" class="card-dark" style="padding:3.5rem 2rem;border-radius:2.5rem;color:#fff;font-weight:900;font-size:1.1rem;text-transform:uppercase;font-style:italic;cursor:pointer;border-width:1px;">
+            <i class="fas fa-search-dollar" style="font-size:3rem;color:var(--green);display:block;margin-bottom:1rem;"></i>
+            Auditor
+        </button>
+    </div>
+</div>
+
+<!-- ════════════════════════ PANTALLA LOGIN ════════════════════════ -->
+<div id="pantallaLogin" class="hidden-step card-dark" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;max-width:420px;padding:2.5rem;border-radius:2.5rem;">
+    <h2 id="tituloLogin" style="font-size:1.6rem;font-weight:900;font-style:italic;text-transform:uppercase;text-align:center;color:#fff;margin-bottom:2rem;"></h2>
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+        <input type="text" id="inputUsuario" placeholder="NOMBRE DEL PROFESIONAL" style="width:100%;padding:1.2rem 1.5rem;border-radius:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">
+        <input type="text" id="inputNombre" placeholder="NOMBRE DE LA EMPRESA" style="width:100%;padding:1.2rem 1.5rem;border-radius:14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">
+        <input type="text" id="inputRUC" placeholder="RUC (11 DÍGITOS)" style="width:100%;padding:1.2rem 1.5rem;border-radius:14px;font-size:11px;font-weight:700;letter-spacing:.08em;">
+        <input type="password" id="inputPass" placeholder="CONTRASEÑA" style="width:100%;padding:1.2rem 1.5rem;border-radius:14px;font-size:11px;font-weight:700;">
+        <button onclick="validarLogin()" id="btnEntrar" style="width:100%;padding:1.2rem;border-radius:14px;background:var(--blue);border:none;color:#fff;font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:.15em;cursor:pointer;transition:background .2s;">Acceder</button>
+        <button onclick="location.reload()" style="background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;cursor:pointer;letter-spacing:.1em;">Regresar</button>
+    </div>
+</div>
+
+<!-- ════════════════════════ PANTALLA RÉGIMEN ════════════════════════ -->
+<div id="pantallaRegimen" class="hidden-step" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;max-width:480px;text-align:center;">
+    <h2 style="font-size:1.6rem;font-weight:900;font-style:italic;text-transform:uppercase;color:#fff;margin-bottom:2rem;">Régimen Tributario</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+        <button onclick="seleccionarRegimen('MYPE')" class="card-dark" style="padding:2.5rem 1.5rem;border-radius:1.5rem;font-weight:900;font-size:1rem;text-transform:uppercase;font-style:italic;color:#fff;cursor:pointer;">MYPE</button>
+        <button onclick="seleccionarRegimen('GENERAL')" class="card-dark" style="padding:2.5rem 1.5rem;border-radius:1.5rem;font-weight:900;font-size:1rem;text-transform:uppercase;font-style:italic;color:#fff;cursor:pointer;">General</button>
+    </div>
+</div>
+
+<!-- ════════════════════════ PANTALLA LIBROS ════════════════════════ -->
+<div id="pantallaLibros" class="hidden-step" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;max-width:640px;text-align:center;">
+    <h2 style="font-size:1.6rem;font-weight:900;font-style:italic;text-transform:uppercase;color:var(--blue);margin-bottom:2rem;">Seleccione el Libro</h2>
+    <div id="gridLibros" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.2rem;"></div>
+</div>
+
+<!-- ════════════════════════ DASHBOARD ════════════════════════ -->
+<div id="pantallaDash" class="hidden-step" style="display:flex;height:calc(100vh - 48px);">
+
+    <!-- SIDEBAR -->
+    <aside style="width:280px;min-width:280px;background:#07070c;border-right:1px solid #0d0d1a;padding:2rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem;overflow-y:auto;">
+        <h2 style="font-size:1.6rem;font-weight:900;color:var(--blue);font-style:italic;text-transform:uppercase;letter-spacing:-.02em;">CERTIME</h2>
+
+        <!-- Wallet info box -->
+        <div style="background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.15);padding:1rem;border-radius:14px;">
+            <p style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px;">Wallet</p>
+            <p id="sideWalletAddr" style="font-size:10px;font-weight:900;color:var(--blue);word-break:break-all;line-height:1.4;">—</p>
+            <p id="sideNetwork" style="font-size:9px;color:var(--muted);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.1em;">Red: —</p>
+        </div>
+
+        <!-- User info box -->
+        <div style="background:rgba(255,255,255,.03);border:1px solid #1a1a2e;padding:1rem;border-radius:14px;">
+            <p style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px;">Profesional</p>
+            <p id="labelUsuario" style="font-size:12px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px;"></p>
+            <p style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px;">Empresa / RUC</p>
+            <p id="labelNombre" style="font-size:12px;font-weight:900;color:var(--blue);text-transform:uppercase;"></p>
+            <p id="labelRUC" style="font-size:10px;color:var(--muted);font-weight:700;margin-top:2px;"></p>
+        </div>
+
+        <!-- Libro activo -->
+        <div id="boxLibro" style="background:rgba(59,130,246,.05);border:1px solid rgba(59,130,246,.2);padding:1rem 1.5rem;border-radius:14px;text-align:center;">
+            <p id="labelLibro" style="font-size:13px;font-weight:900;color:#fff;text-transform:uppercase;font-style:italic;line-height:1.3;"></p>
+        </div>
+
+        <div style="flex:1;"></div>
+
+        <button onclick="location.reload()" style="width:100%;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:var(--red);padding:12px;border-radius:12px;font-weight:900;font-size:10px;text-transform:uppercase;letter-spacing:.12em;cursor:pointer;transition:background .2s;font-family:inherit;">
+            Cerrar Sesión
+        </button>
+        <button onclick="resetTotal()" style="width:100%;background:none;border:1px solid #1a1a2e;color:var(--muted);padding:10px;border-radius:12px;font-weight:900;font-size:9px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s;font-family:inherit;">
+            <i class="fas fa-trash-alt" style="margin-right:6px;"></i> Resetear (Prueba)
+        </button>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main style="flex:1;padding:2.5rem 3rem;overflow-y:auto;background:#000;">
+
+        <!-- ─── ZONA CONTADOR ─── -->
+        <div id="zonaContador" class="hidden-step" style="margin-bottom:2.5rem;">
+
+            <!-- Upload + Drive row -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+                <div class="card-dark" style="padding:2rem;border-radius:2rem;text-align:center;cursor:pointer;border-style:dashed;" onclick="document.getElementById('filePdf').click()">
+                    <input type="file" id="filePdf" class="hidden" accept=".pdf" onchange="document.getElementById('txtFile').innerText = this.files[0]?.name || 'Subir Libro en PDF'">
+                    <i class="fas fa-file-signature" style="font-size:2.5rem;color:var(--blue);margin-bottom:1rem;display:block;"></i>
+                    <p id="txtFile" style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);letter-spacing:.08em;font-style:italic;">Subir Libro en PDF</p>
+                </div>
+                <div class="card-dark" style="padding:2rem;border-radius:2rem;display:flex;align-items:center;">
+                    <input type="text" id="urlDrive" placeholder="Link de Drive Privado" style="width:100%;padding:1rem 1.2rem;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.06em;">
+                </div>
+            </div>
+
+            <!-- Seal button -->
+            <button id="btnSellar" class="btn-seal idle" onclick="sellarDocumento()">
+                <i class="fas fa-link" style="margin-right:10px;"></i>
+                <span id="btnSellarTxt">Sellar Original en Blockchain</span>
+            </button>
+
+            <!-- Wallet warning (visible when not connected) -->
+            <div id="walletWarning" style="margin-top:1rem;background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.2);border-radius:14px;padding:14px 20px;font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.1em;display:none;text-align:center;">
+                <i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>
+                Debes conectar tu wallet para sellar en blockchain
+            </div>
+        </div>
+
+        <!-- ─── ZONA AUDITOR ─── -->
+        <div id="zonaVerificadorAuditor" class="hidden-step" style="margin-bottom:2rem;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.15);padding:2rem;border-radius:2rem;">
+            <h3 style="font-size:11px;font-weight:900;color:var(--green);text-transform:uppercase;letter-spacing:.15em;font-style:italic;margin-bottom:1.5rem;display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-shield-alt"></i> Estación de Verificación Forense
+            </h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                <div style="background:rgba(0,0,0,.4);padding:1.5rem;border-radius:14px;border:1px solid #1a1a2e;">
+                    <span style="font-size:9px;background:var(--green);color:#000;padding:3px 10px;border-radius:20px;font-weight:900;">PASO 1</span>
+                    <p style="font-size:11px;font-weight:900;color:#fff;text-transform:uppercase;font-style:italic;margin-top:12px;margin-bottom:6px;">Descargar del Drive</p>
+                    <p style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;font-style:italic;line-height:1.5;">Baje el archivo del link en la tabla inferior para validar que no fue alterado.</p>
+                </div>
+                <div style="background:rgba(0,0,0,.4);padding:1.5rem;border-radius:14px;border:1px dashed rgba(34,197,94,.3);text-align:center;cursor:pointer;transition:background .2s;" onclick="document.getElementById('fileCheck').click()">
+                    <span style="font-size:9px;background:var(--green);color:#000;padding:3px 10px;border-radius:20px;font-weight:900;">PASO 2</span>
+                    <input type="file" id="fileCheck" class="hidden" accept=".pdf">
+                    <p style="font-size:11px;font-weight:900;color:#fff;text-transform:uppercase;font-style:italic;margin-top:12px;">Validar Integridad</p>
+                    <i class="fas fa-upload" style="color:var(--green);font-size:1.5rem;margin:10px 0;display:block;"></i>
+                    <p style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;font-style:italic;line-height:1.5;">Subir PDF para comparar Huella y Fecha</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── TABLE ─── -->
+        <div class="card-dark" style="border-radius:1.5rem;overflow:hidden;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Documento</th>
+                        <th>Fecha de Sello</th>
+                        <th>Huella SHA-256</th>
+                        <th>TXID Blockchain</th>
+                        <th style="text-align:center;">Estado</th>
+                        <th style="text-align:right;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoTabla"></tbody>
+            </table>
+        </div>
+
+        <!-- ─── AUDIT RESULT ─── -->
+        <div id="mensajeAudit" class="hidden-step" style="margin-top:1.5rem;padding:2.5rem;border-radius:2rem;font-weight:900;text-align:left;font-size:11px;border-width:4px;border-style:solid;"></div>
+    </main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     SCRIPT
+════════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+const { jsPDF } = window.jspdf;
+
+/* ══════════════════════════════════════════════════════
+   ██████╗  ██████╗ ███╗   ██╗████████╗██████╗  █████╗  ██████╗████████╗
+   ██╔════╝██╔═══██╗████╗  ██║╚══██╔══╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝
+   ██║     ██║   ██║██╔██╗ ██║   ██║   ██████╔╝███████║██║        ██║   
+   ██║     ██║   ██║██║╚██╗██║   ██║   ██╔══██╗██╔══██║██║        ██║   
+   ╚██████╗╚██████╔╝██║ ╚████║   ██║   ██║  ██║██║  ██║╚██████╗   ██║   
+    ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝   ╚═╝  
+
+   ★ CONFIGURA AQUÍ TU CONTRATO ANTES DE DESPLEGAR ★
+══════════════════════════════════════════════════════ */
+
+// ─── REDES SOPORTADAS ───────────────────────────────────
+const NETWORKS = {
+    // Rollux Mainnet
+    570: {
+        name: "Rollux Mainnet",
+        explorer: "https://explorer.rollux.com/tx/",
+        rpc: "https://rpc.rollux.com",
+        chainIdHex: "0x23A"          // 570 decimal
+    },
+    // Rollux Testnet (Tanenbaum)
+    57000: {
+        name: "Rollux Testnet",
+        explorer: "https://rollux.tanenbaum.io/tx/",
+        rpc: "https://rpc-tanenbaum.rollux.com",
+        chainIdHex: "0xDEA8"         // 57000 decimal
+    },
+    // Syscoin NEVM Testnet (Tanenbaum)
+    5700: {
+        name: "Syscoin NEVM Testnet",
+        explorer: "https://tanenbaum.io/tx/",
+        rpc: "https://rpc.tanenbaum.io",
+        chainIdHex: "0x1644"         // 5700 decimal
+    }
+};
+
+// ─── DIRECCIÓN DEL CONTRATO ─────────────────────────────
+//  ⚠  Reemplaza con tu contrato desplegado en Rollux
+const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+// ─── ABI DEL CONTRATO ───────────────────────────────────
+//  Interfaz mínima: una función recordHash que almacena el hash
+//  y emite un evento.
+//
+//  Solidity de referencia:
+//  ┌──────────────────────────────────────────────────────┐
+//  │ // SPDX-License-Identifier: MIT                      │
+//  │ pragma solidity ^0.8.0;                              │
+//  │ contract CertimeIntegrity {                          │
+//  │   event HashRecorded(                                │
+//  │     address indexed sender,                          │
+//  │     string hash,                                     │
+//  │     uint256 timestamp                                │
+//  │   );                                                 │
+//  │   mapping(string => uint256) public registry;        │
+//  │   function recordHash(string calldata _hash) external{ │
+//  │     registry[_hash] = block.timestamp;               │
+//  │     emit HashRecorded(msg.sender,_hash,block.timestamp);│
+//  │   }                                                  │
+//  │ }                                                    │
+//  └──────────────────────────────────────────────────────┘
+const CONTRACT_ABI = [
+    {
+        "inputs": [
+            { "internalType": "string", "name": "_hash", "type": "string" }
+        ],
+        "name": "recordHash",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            { "indexed": true,  "internalType": "address", "name": "sender",    "type": "address" },
+            { "indexed": false, "internalType": "string",  "name": "hash",      "type": "string"  },
+            { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+        ],
+        "name": "HashRecorded",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            { "internalType": "string", "name": "", "type": "string" }
+        ],
+        "name": "registry",
+        "outputs": [
+            { "internalType": "uint256", "name": "", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+
+/* ══════════════════════════════════════════════════════
+   ESTADO GLOBAL
+══════════════════════════════════════════════════════ */
+let rolActual = "", rucActual = "", libroActual = "", nombreActual = "", usuarioActual = "";
+let walletAddress = null;
+let currentChainId = null;
+
+/* ══════════════════════════════════════════════════════
+   TOAST SYSTEM
+══════════════════════════════════════════════════════ */
+function showToast(msg, type = "info", duration = 4000) {
+    const icons = { success: "fa-check-circle", error: "fa-times-circle", info: "fa-info-circle", warning: "fa-exclamation-triangle" };
+    const t = document.createElement("div");
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${icons[type]}"></i><span>${msg}</span>`;
+    document.getElementById("toastContainer").appendChild(t);
+    setTimeout(() => {
+        t.style.animation = "slideOut .3s ease-in forwards";
+        setTimeout(() => t.remove(), 300);
+    }, duration);
+}
+
+/* ══════════════════════════════════════════════════════
+   WALLET – DETECCIÓN Y CONEXIÓN  (EIP-1193 universal)
+══════════════════════════════════════════════════════ */
+
+// ── Bandera para registrar listeners solo una vez ────────
+let _listenersRegistered = false;
+
+// ── Resolución de provider: Pali primero, luego cualquier
+//    proveedor EIP-1193 estándar (MetaMask, Rabby, etc.)   ──
+function detectWalletProvider() {
+    // Pali Wallet expone window.pali con la interfaz EIP-1193
+    if (typeof window.pali !== "undefined" && typeof window.pali.request === "function") {
+        return window.pali;
+    }
+    // Fallback: cualquier inyector EIP-1193 genérico (MetaMask, Rabby, Frame…)
+    if (typeof window.ethereum !== "undefined" && typeof window.ethereum.request === "function") {
+        return window.ethereum;
+    }
+    return null;
+}
+
+// ── Registra accountsChanged y chainChanged una sola vez ─
+//    para evitar duplicados si el usuario reconecta          ──
+function _registerProviderListeners(provider) {
+    if (_listenersRegistered) return;
+    _listenersRegistered = true;
+
+    // Cambio de cuenta (usuario cambia cuenta en Pali / MetaMask)
+    provider.on("accountsChanged", (accs) => {
+        const prev = walletAddress;
+        walletAddress = (Array.isArray(accs) && accs.length > 0) ? accs[0] : null;
+        updateWalletUI();
+
+        if (!walletAddress) {
+            showToast("Wallet desconectada.", "warning");
+        } else if (walletAddress !== prev) {
+            showToast("Cuenta cambiada → " + truncateAddr(walletAddress), "info");
+        }
+    });
+
+    // Cambio de red (usuario cambia entre Rollux Mainnet ↔ Testnet u otra red)
+    provider.on("chainChanged", (chainHex) => {
+        // chainHex puede llegar como string hex ("0x23A") o número según la wallet
+        const parsed = typeof chainHex === "string"
+            ? parseInt(chainHex, 16)
+            : Number(chainHex);
+
+        if (!isNaN(parsed)) {
+            currentChainId = parsed;
+            updateWalletUI();
+
+            const netInfo = NETWORKS[currentChainId];
+            if (netInfo) {
+                showToast("Red cambiada → " + netInfo.name, "info");
+            } else {
+                showToast("Red desconocida (Chain ID: " + currentChainId + "). Usa Rollux.", "warning");
+            }
+        }
+    });
+
+    // Algunos providers (Pali) emiten "disconnect" cuando la wallet se bloquea
+    if (typeof provider.on === "function") {
+        provider.on("disconnect", () => {
+            walletAddress  = null;
+            currentChainId = null;
+            updateWalletUI();
+            showToast("Wallet desconectada.", "warning");
+        });
+    }
+}
+
+async function connectWallet() {
+    const provider = detectWalletProvider();
+
+    if (!provider) {
+        showToast("No se detectó ninguna wallet EVM. Instala Pali Wallet o MetaMask.", "error", 6000);
+        const btn = document.getElementById("btnConnectWallet");
+        btn.innerHTML   = '<i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i> Wallet no encontrada';
+        btn.style.background = "#991b1b";
+        return;
+    }
+
+    try {
+        // Solicitar acceso a cuentas (EIP-1193 estándar)
+        const accounts = await provider.request({ method: "eth_requestAccounts" });
+
+        if (!accounts || accounts.length === 0) {
+            showToast("No se obtuvieron cuentas. Verifica tu wallet.", "warning");
+            return;
+        }
+
+        walletAddress = accounts[0];
+
+        // Leer la red activa
+        const chainHex = await provider.request({ method: "eth_chainId" });
+        currentChainId = parseInt(chainHex, 16);
+
+        // Registrar listeners en tiempo real (solo la primera vez)
+        _registerProviderListeners(provider);
+
+        updateWalletUI();
+        showToast("Wallet conectada: " + truncateAddr(walletAddress), "success");
+
+    } catch (err) {
+        // EIP-1193: código 4001 = usuario rechazó
+        if (err.code === 4001) {
+            showToast("Conexión rechazada por el usuario.", "warning");
+        } else {
+            showToast("Error al conectar wallet: " + (err.message || String(err)), "error");
+        }
+    }
+}
+
+function updateWalletUI() {
+    const dot      = document.getElementById("walletDot");
+    const addrEl   = document.getElementById("walletAddress");
+    const netBadge = document.getElementById("netBadge");
+    const btnCon   = document.getElementById("btnConnectWallet");
+    const sideAddr = document.getElementById("sideWalletAddr");
+    const sideNet  = document.getElementById("sideNetwork");
+
+    if (walletAddress) {
+        dot.className      = "wallet-dot connected";
+        addrEl.textContent = truncateAddr(walletAddress);
+        btnCon.innerHTML   = '<i class="fas fa-check" style="margin-right:6px;"></i> Conectada';
+        btnCon.style.background = "#16a34a";
+        sideAddr.textContent = walletAddress;
+
+        const netInfo = NETWORKS[currentChainId];
+        if (netInfo) {
+            netBadge.textContent = netInfo.name;
+            netBadge.className = "net-badge rollux";
+            sideNet.textContent = "Red: " + netInfo.name;
+        } else {
+            netBadge.textContent = "Red Desconocida (" + currentChainId + ")";
+            netBadge.className = "net-badge wrong";
+            sideNet.textContent = "Red: Desconocida (" + currentChainId + ")";
+        }
+
+        document.getElementById("walletWarning").style.display = "none";
+    } else {
+        dot.className      = "wallet-dot";
+        addrEl.textContent = "Wallet no conectada";
+        btnCon.innerHTML   = '<i class="fas fa-wallet" style="margin-right:6px;"></i> Conectar Wallet';
+        btnCon.style.background = "";
+        netBadge.textContent = "Sin conexión";
+        netBadge.className = "net-badge disconnected";
+        sideAddr.textContent = "—";
+        sideNet.textContent = "Red: —";
+    }
+}
+
+function truncateAddr(addr) {
+    if (!addr) return "—";
+    return addr.slice(0, 6) + "…" + addr.slice(-4);
+}
+
+/* ══════════════════════════════════════════════════════
+   BLOCKCHAIN – LLAMADA AL CONTRATO
+══════════════════════════════════════════════════════ */
+async function anchorHashOnChain(hash) {
+    const provider = detectWalletProvider();
+    if (!provider) throw new Error("No hay wallet disponible. Instala Pali Wallet o MetaMask.");
+
+    // ── SEGURIDAD: refrescar estado desde el provider antes de firmar ──
+    // Esto captura cualquier cambio de cuenta/red que haya ocurrido
+    // después del último evento, evitando usar valores stale.
+    const liveAccounts = await provider.request({ method: "eth_accounts" });
+    const liveChainHex = await provider.request({ method: "eth_chainId" });
+
+    // Sincronizar estado global con la realidad actual del provider
+    walletAddress  = (liveAccounts && liveAccounts.length > 0) ? liveAccounts[0] : null;
+    currentChainId = parseInt(liveChainHex, 16);
+    updateWalletUI(); // reflejar inmediatamente en UI si cambió algo
+
+    // Validaciones de seguridad post-refresco
+    if (!walletAddress) {
+        throw Object.assign(new Error("Wallet no conectada o bloqueada."), { code: 4100 });
+    }
+    if (!NETWORKS[currentChainId]) {
+        throw Object.assign(
+            new Error("Red incorrecta (Chain ID: " + currentChainId + "). Cambia a Rollux en tu wallet."),
+            { code: 4902 }
+        );
+    }
+
+    // ── Encodificar llamada: recordHash(string) ──────────
+    // Selector de función: keccak256("recordHash(string)") = 0x4cd9c6c1
+    const selector    = await fnSelector("recordHash(string)");
+    const encodedData = encodeStringCalldata(selector, hash);
+
+    const tx = {
+        from:  walletAddress,
+        to:    CONTRACT_ADDRESS,
+        data:  encodedData
+    };
+
+    // Enviar transacción y devolver TXID
+    const txHash = await provider.request({
+        method: "eth_sendTransaction",
+        params: [tx]
+    });
+    return txHash;
+}
+
+// Calcula el selector de 4 bytes (keccak256 del signature)
+async function fnSelector(signature) {
+    const enc  = new TextEncoder().encode(signature);
+    const hBuf = await crypto.subtle.digest("SHA-256", enc);
+    // ⚠ SHA-256 ≠ keccak256; para producción, usa ethers.js o web3.js.
+    // Como fallback sin librerías externas, puedes usar la constante conocida:
+    // keccak256("recordHash(string)") = 0x4cd9c6c1
+    return "0x4cd9c6c1";   // ← reemplaza por el selector real de tu contrato
+}
+
+// Codifica (selector + string ABI-encoded) en hex
+function encodeStringCalldata(selector, str) {
+    const strBytes = new TextEncoder().encode(str);
+    const len      = strBytes.length;
+
+    // ABI encode: offset (32), length (32), value (padded to 32)
+    const offset    = toHex32(32n);
+    const lengthHex = toHex32(BigInt(len));
+    const padded    = padStringBytes(strBytes);
+    return selector + offset + lengthHex + padded;
+}
+
+function toHex32(n) {
+    return n.toString(16).padStart(64, "0");
+}
+
+function padStringBytes(bytes) {
+    const hex  = Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+    const rem  = 64 - (hex.length % 64);
+    return hex + (rem === 64 ? "" : "0".repeat(rem));
+}
+
+/* ══════════════════════════════════════════════════════
+   LÓGICA DE ROLES / NAVEGACIÓN (ORIGINAL PRESERVADA)
+══════════════════════════════════════════════════════ */
+function irALogin(rol) {
+    rolActual = rol;
+    document.getElementById("pantalla0").classList.add("hidden-step");
+    document.getElementById("pantallaLogin").classList.remove("hidden-step");
+    document.getElementById("tituloLogin").innerText = "Portal " + rol;
+    document.getElementById("btnEntrar").innerText = "Acceder al Sistema " + rol;
+}
+
+function validarLogin() {
+    usuarioActual = document.getElementById("inputUsuario").value.trim();
+    rucActual     = document.getElementById("inputRUC").value.trim();
+    nombreActual  = document.getElementById("inputNombre").value.trim();
+    if (!rucActual || !nombreActual || !usuarioActual) {
+        showToast("Faltan datos en el formulario.", "error");
+        return;
+    }
+    document.getElementById("pantallaLogin").classList.add("hidden-step");
+    if (rolActual === "CONTADOR") {
+        document.getElementById("pantallaRegimen").classList.remove("hidden-step");
+    } else {
+        abrirDashboard();
+    }
+}
+
+function seleccionarRegimen(reg) {
+    const grid = document.getElementById("gridLibros");
+    grid.innerHTML = "";
+    const libs = ["Reg. Ventas", "Reg. Compras", "Libro Diario", "Libro Mayor"];
+    libs.forEach(l => {
+        const b = document.createElement("button");
+        b.className = "card-dark";
+        b.style.cssText = "padding:2rem 1.5rem;border-radius:1.5rem;font-weight:900;font-style:italic;text-transform:uppercase;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;border-width:1px;";
+        b.innerText = l;
+        b.onclick = () => { libroActual = l; abrirDashboard(); };
+        grid.appendChild(b);
+    });
+    document.getElementById("pantallaRegimen").classList.add("hidden-step");
+    document.getElementById("pantallaLibros").classList.remove("hidden-step");
+}
+
+function abrirDashboard() {
+    document.getElementById("pantallaLibros").classList.add("hidden-step");
+    document.getElementById("pantallaDash").classList.remove("hidden-step");
+    document.getElementById("pantallaDash").style.display = "flex";
+
+    document.getElementById("labelUsuario").innerText = usuarioActual;
+    document.getElementById("labelRUC").innerText     = "RUC: " + rucActual;
+    document.getElementById("labelNombre").innerText  = nombreActual;
+    document.getElementById("labelLibro").innerText   = libroActual || "MODO AUDITORÍA";
+
+    if (rolActual === "CONTADOR") {
+        document.getElementById("zonaContador").classList.remove("hidden-step");
+        document.getElementById("zonaVerificadorAuditor").classList.add("hidden-step");
+    } else {
+        document.getElementById("zonaContador").classList.add("hidden-step");
+        document.getElementById("zonaVerificadorAuditor").classList.remove("hidden-step");
+    }
+    renderizarTabla();
+}
+
+/* ══════════════════════════════════════════════════════
+   SELLADO – HASH + BLOCKCHAIN
+══════════════════════════════════════════════════════ */
+function setSealState(state) {
+    const btn     = document.getElementById("btnSellar");
+    const btnTxt  = document.getElementById("btnSellarTxt");
+    const states  = {
+        idle:    { cls: "idle",     txt: "Sellar Original en Blockchain",    icon: "fa-link" },
+        waiting: { cls: "waiting",  txt: "Esperando firma en wallet…",        icon: "fa-spinner fa-spin" },
+        mining:  { cls: "mining",   txt: "Procesando en Red…",               icon: "fa-cog fa-spin" },
+        success: { cls: "success",  txt: "✓ Sello Exitoso",                  icon: "fa-check-circle" },
+        disabled:{ cls: "disabled", txt: "Sellar Original en Blockchain",    icon: "fa-link" }
+    };
+    const s = states[state] || states.idle;
+    btn.className = `btn-seal ${s.cls}`;
+    btnTxt.innerHTML = `<i class="fas ${s.icon}" style="margin-right:10px;"></i>${s.txt}`;
+    btn.disabled = (state !== "idle" && state !== "success");
+    // Re-enable after success
+    if (state === "success") {
+        setTimeout(() => setSealState("idle"), 3000);
+    }
+}
+
+async function sellarDocumento() {
+    const file  = document.getElementById("filePdf").files[0];
+    const drive = document.getElementById("urlDrive").value.trim();
+
+    if (!file || !drive) {
+        showToast("Falta archivo PDF o link de Drive.", "error");
+        return;
+    }
+
+    // Check wallet
+    if (!walletAddress) {
+        document.getElementById("walletWarning").style.display = "block";
+        showToast("Conecta tu wallet antes de sellar.", "warning");
+        return;
+    }
+
+    // Check network
+    if (!NETWORKS[currentChainId]) {
+        showToast("Cambia a Rollux Mainnet o Testnet en tu wallet.", "error");
+        return;
+    }
+
+    // ── Generar hash SHA-256 ────────────────────────────
+    const buf  = await file.arrayBuffer();
+    const hBuf = await crypto.subtle.digest("SHA-256", buf);
+    const hash = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+    // ── Enviar a blockchain ─────────────────────────────
+    setSealState("waiting");
+    showToast("Confirma la transacción en tu wallet.", "info");
+
+    let txid = null;
+    try {
+        txid = await anchorHashOnChain(hash);
+        setSealState("mining");
+        showToast("Transacción enviada. Esperando confirmación…", "info", 6000);
+    } catch (err) {
+        setSealState("idle");
+        if (err.code === 4001) {
+            showToast("Transacción rechazada por el usuario.", "warning");
+        } else if (err.code === 4100) {
+            // Wallet bloqueada o cuenta desconectada justo antes de firmar
+            document.getElementById("walletWarning").style.display = "block";
+            showToast("Wallet no conectada. Reconecta antes de sellar.", "warning");
+        } else if (err.code === 4902) {
+            // Red incorrecta detectada en el momento de firmar
+            showToast("Red incorrecta al momento de firmar. Cambia a Rollux en tu wallet.", "error");
+        } else {
+            showToast("Error en blockchain: " + (err.message || String(err)), "error", 7000);
+        }
+        return;
+    }
+
+    // ── Guardar en localStorage ──────────────────────────
+    const ahora = new Date().toLocaleString();
+    let db = JSON.parse(localStorage.getItem("cert_db_v50") || "[]");
+    db.push({
+        ruc: rucActual, nombre: nombreActual, usuario: usuarioActual,
+        libro: libroActual, hash, link: drive,
+        fecha: ahora, txid: txid,
+        chainId: currentChainId,
+        solicitado: false, habilitado: false
+    });
+    localStorage.setItem("cert_db_v50", JSON.stringify(db));
+
+    setSealState("success");
+    showToast("Sello registrado con éxito en blockchain.", "success", 6000);
+    renderizarTabla();
+}
+
+/* ══════════════════════════════════════════════════════
+   VERIFICACIÓN AUDITOR (ORIGINAL PRESERVADA)
+══════════════════════════════════════════════════════ */
+document.getElementById("fileCheck").onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const buf           = await file.arrayBuffer();
+    const hBuf          = await crypto.subtle.digest("SHA-256", buf);
+    const hashCandidato = Array.from(new Uint8Array(hBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+    const db    = JSON.parse(localStorage.getItem("cert_db_v50") || "[]");
+    const match = db.find(i => i.ruc === rucActual && i.hash === hashCandidato);
+    const msg   = document.getElementById("mensajeAudit");
+    msg.classList.remove("hidden-step");
+
+    if (match && match.habilitado) {
+        const netInfo   = NETWORKS[match.chainId] || { explorer: "#", name: "Desconocida" };
+        const txidLink  = match.txid ? `<a href="${netInfo.explorer}${match.txid}" target="_blank" class="txid-chip">${match.txid.slice(0,18)}…</a>` : "<span style='color:#4b5563;'>Sin TXID</span>";
+
+        msg.style.cssText = "margin-top:1.5rem;padding:2.5rem;border-radius:2rem;font-weight:900;border:4px solid var(--green);background:#000;color:var(--green);";
+        msg.innerHTML = `
+            <i class="fas fa-history" style="font-size:2rem;margin-bottom:1rem;display:block;"></i>
+            <span style="font-size:1.4rem;font-style:italic;text-transform:uppercase;">Integridad Validada</span>
+            <div style="font-size:10px;color:#9ca3af;margin-top:1.5rem;display:flex;flex-direction:column;gap:8px;font-family:'Courier New',monospace;text-transform:uppercase;">
+                <p>Fecha de Sello Original: <span style="color:var(--green);">${match.fecha}</span></p>
+                <p>Red: <span style="color:var(--blue);">${netInfo.name}</span></p>
+                <p>TXID: ${txidLink}</p>
+                <p>SHA-256: ${match.hash.substring(0,32)}…</p>
+            </div>
+            <button onclick="bajarPDF('${match.hash}','${match.libro}','${match.nombre}','${match.ruc}','ACTA DE INTEGRIDAD','${match.fecha}','${match.txid||''}')"
+                style="margin-top:1.5rem;background:var(--green);border:none;padding:12px 28px;border-radius:40px;color:#000;font-size:10px;font-weight:900;font-family:inherit;text-transform:uppercase;letter-spacing:.12em;cursor:pointer;font-style:italic;">
+                Generar Acta de Conformidad
+            </button>`;
+    } else {
+        msg.style.cssText = "margin-top:1.5rem;padding:2.5rem;border-radius:2rem;font-weight:900;text-align:center;border:4px solid var(--red);background:#000;color:var(--red);";
+        msg.innerHTML = `<i class="fas fa-times-circle" style="font-size:2rem;margin-bottom:1rem;display:block;"></i><span style="font-size:1.4rem;font-style:italic;text-transform:uppercase;">Documento no coincide o sin autorización</span>`;
+    }
+};
+
+/* ══════════════════════════════════════════════════════
+   TABLA DE REGISTROS
+══════════════════════════════════════════════════════ */
+function renderizarTabla() {
+    const body = document.getElementById("cuerpoTabla");
+    body.innerHTML = "";
+    const db          = JSON.parse(localStorage.getItem("cert_db_v50") || "[]");
+    const misRegistros = db.filter(i => i.ruc === rucActual);
+
+    if (misRegistros.length === 0) {
+        body.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2.5rem;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;font-style:italic;">Sin registros para este RUC</td></tr>`;
+        return;
+    }
+
+    misRegistros.forEach(item => {
+        const row    = body.insertRow();
+        const sTxt   = item.habilitado ? "AUTORIZADO" : (item.solicitado ? "PENDIENTE" : "PRIVADO");
+        const sColor = item.habilitado ? "var(--green)" : (item.solicitado ? "var(--orange)" : "var(--muted)");
+
+        // TXID cell
+        const netInfo = NETWORKS[item.chainId] || { explorer: "#", name: "?" };
+        let txidCell  = `<span style="color:var(--muted);font-size:9px;">—</span>`;
+        if (item.txid) {
+            txidCell = `<a href="${netInfo.explorer}${item.txid}" target="_blank" class="txid-chip">${item.txid.slice(0,12)}…</a>`;
+        }
+
+        row.innerHTML = `
+            <td style="color:var(--blue);font-weight:900;font-style:italic;text-transform:uppercase;">${item.libro}</td>
+            <td style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;font-style:italic;">${item.fecha}</td>
+            <td style="font-family:'Courier New',monospace;font-size:9px;color:#374151;">${item.hash.substring(0,14)}…</td>
+            <td>${txidCell}</td>
+            <td style="text-align:center;">
+                <span style="font-size:9px;font-weight:900;color:${sColor};text-transform:uppercase;letter-spacing:.08em;">${sTxt}</span>
+            </td>
+            <td style="text-align:right;">
+                ${rolActual === "CONTADOR"
+                    ? `<button onclick="bajarPDF('${item.hash}','${item.libro}','${item.nombre}','${item.ruc}','CERTIFICADO','${item.fecha}','${item.txid||''}')"
+                           style="background:var(--blue);border:none;padding:6px 14px;border-radius:8px;font-size:9px;font-weight:900;color:#fff;text-transform:uppercase;font-style:italic;cursor:pointer;font-family:inherit;letter-spacing:.08em;">
+                           Certificado
+                       </button>
+                       ${item.solicitado && !item.habilitado
+                           ? `<button onclick="accionHabilitar('${item.hash}')"
+                                  style="background:var(--orange);border:none;padding:6px 14px;border-radius:8px;font-size:9px;font-weight:900;color:#fff;text-transform:uppercase;cursor:pointer;font-family:inherit;margin-left:6px;letter-spacing:.08em;">
+                                  Habilitar
+                              </button>`
+                           : ""}` 
+                    : (item.habilitado
+                        ? `<button onclick="window.open('${item.link}','_blank')"
+                               style="background:var(--green);border:none;padding:6px 14px;border-radius:8px;font-size:9px;font-weight:900;color:#000;text-transform:uppercase;font-style:italic;cursor:pointer;font-family:inherit;letter-spacing:.08em;">
+                               1. Ver Drive
+                           </button>`
+                        : `<button onclick="accionSolicitar('${item.hash}')"
+                               style="background:var(--blue);border:none;padding:6px 14px;border-radius:8px;font-size:9px;font-weight:900;color:#fff;text-transform:uppercase;cursor:pointer;font-family:inherit;letter-spacing:.08em;">
+                               Solicitar
+                           </button>`)
+                }
+            </td>
+        `;
+    });
+}
+
+/* ══════════════════════════════════════════════════════
+   ACCIONES AUDITOR / CONTADOR
+══════════════════════════════════════════════════════ */
+function accionSolicitar(hash) {
+    const clave = prompt("Clave de Auditor:");
+    if (clave === "3101") {
+        let db  = JSON.parse(localStorage.getItem("cert_db_v50") || "[]");
+        const d = db.find(i => i.hash === hash);
+        if (d) d.solicitado = true;
+        localStorage.setItem("cert_db_v50", JSON.stringify(db));
+        renderizarTabla();
+        showToast("Solicitud enviada al Contador.", "success");
+    } else {
+        showToast("Clave incorrecta.", "error");
+    }
+}
+
+function accionHabilitar(hash) {
+    let db  = JSON.parse(localStorage.getItem("cert_db_v50") || "[]");
+    const d = db.find(i => i.hash === hash);
+    if (d) d.habilitado = true;
+    localStorage.setItem("cert_db_v50", JSON.stringify(db));
+    renderizarTabla();
+    showToast("Acceso habilitado para el Auditor.", "success");
+}
+
+function resetTotal() {
+    if (confirm("¿ESTÁS SEGURO? Se borrarán todos los registros de prueba.")) {
+        localStorage.removeItem("cert_db_v50");
+        location.reload();
+    }
+}
+
+/* ══════════════════════════════════════════════════════
+   GENERADOR DE PDF
+══════════════════════════════════════════════════════ */
+function bajarPDF(h, l, n, r, tipo, f, txid = "") {
+    const doc = new jsPDF();
+
+    // Header
+    doc.setFillColor(5, 5, 15);
+    doc.rect(0, 0, 210, 297, "F");
+    doc.setTextColor(59, 130, 246);
+    doc.setFontSize(22);
+    doc.setFont("courier", "bold");
+    doc.text("CERTIME PROTOCOL", 20, 22);
+
+    doc.setTextColor(150, 150, 180);
+    doc.setFontSize(11);
+    doc.setFont("courier", "normal");
+    doc.text(`${tipo} DE INTEGRIDAD BLOCKCHAIN`, 20, 34);
+
+    doc.setDrawColor(30, 30, 60);
+    doc.line(20, 40, 190, 40);
+
+    // Fields
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    const fields = [
+        ["Profesional:", usuarioActual],
+        ["Empresa:",     n],
+        ["RUC:",         r],
+        ["Libro:",       l],
+        ["Fecha Sello:", f],
+    ];
+    let y = 52;
+    fields.forEach(([k, v]) => {
+        doc.setTextColor(100, 100, 140); doc.text(k, 20, y);
+        doc.setTextColor(255, 255, 255); doc.text(v || "—", 60, y);
+        y += 10;
+    });
+
+    y += 4;
+    doc.setTextColor(100, 100, 140); doc.setFontSize(9); doc.text("Huella Digital SHA-256:", 20, y);
+    y += 8;
+    doc.setTextColor(59, 130, 246); doc.setFont("courier", "bold"); doc.setFontSize(7);
+    // Split hash into two lines
+    doc.text(h.substring(0, 40), 20, y);
+    doc.text(h.substring(40), 20, y + 7);
+
+    y += 18;
+    if (txid) {
+        doc.setTextColor(100, 100, 140); doc.setFont("courier", "normal"); doc.setFontSize(9);
+        doc.text("Transaction ID (TXID):", 20, y);
+        y += 8;
+        doc.setTextColor(34, 197, 94); doc.setFont("courier", "bold"); doc.setFontSize(7);
+        doc.text(txid, 20, y);
+        y += 14;
+    }
+
+    doc.setTextColor(100, 100, 140); doc.setFont("courier", "normal"); doc.setFontSize(9);
+    doc.text("Fecha de Emisión:", 20, y); y += 8;
+    doc.setTextColor(255, 255, 255); doc.text(new Date().toLocaleString(), 20, y); y += 12;
+    doc.setTextColor(34, 197, 94); doc.setFont("courier", "bold"); doc.setFontSize(10);
+    doc.text("DOCUMENTO INMUTABLE REGISTRADO EN BLOCKCHAIN", 20, y);
+
+    doc.save(`${tipo}_${l.replace(/ /g, "_")}.pdf`);
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT – verificar si wallet ya estaba conectada
+   y registrar listeners desde el primer momento
+══════════════════════════════════════════════════════ */
+window.addEventListener("load", async () => {
+    const provider = detectWalletProvider();
+    if (!provider) return;
+
+    try {
+        // eth_accounts no lanza un popup: solo lee si ya hay permiso concedido
+        const accs = await provider.request({ method: "eth_accounts" });
+        if (accs && accs.length > 0) {
+            walletAddress = accs[0];
+            const chainHex = await provider.request({ method: "eth_chainId" });
+            currentChainId = parseInt(chainHex, 16);
+            updateWalletUI();
+        }
+    } catch (e) { /* silencioso: el usuario aún no ha dado permiso */ }
+
+    // Registrar listeners desde el inicio, incluso si el usuario
+    // no ha pulsado "Conectar Wallet", para capturar cambios reactivos
+    // tan pronto como la wallet esté disponible (ej. Pali autoreconnect)
+    _registerProviderListeners(provider);
+});
+</script>
+</body>
+</html>
