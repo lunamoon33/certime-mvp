@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Certime · Protección Contable</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+/* ══ TOKENS DE COLOR ═══════════════════════════════════ */
+:root{
+  --navy:#0D1F3C;--blue:#2563B0;--sky:#3B82F6;
+  --green:#16A34A;--green-l:#22C55E;
+  --orange:#EA580C;--red:#DC2626;
+  --bg:#F0F4F8;--surface:#FFFFFF;--surface2:#F8FAFC;
+  --border:#E2E8F0;--text:#0D1F3C;--muted:#64748B;--muted-l:#94A3B8;
+  --shadow:0 2px 12px rgba(13,31,60,.06);
+  --shadow-lg:0 8px 32px rgba(13,31,60,.12);
+}
+[data-theme="dark"]{
+  --bg:#0A0F1A;--surface:#111827;--surface2:#1E2533;
+  --border:#1F2D45;--text:#F1F5F9;--muted:#94A3B8;--muted-l:#475569;
+  --shadow:0 2px 12px rgba(0,0,0,.3);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.4);
+}
+
+/* ══ RESET ══════════════════════════════════════════════ */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .3s,color .3s;}
+h1,h2,h3{font-family:'Syne',sans-serif;}
+.hidden{display:none!important;}
+
+/* ══ TOPBAR ═════════════════════════════════════════════ */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:var(--navy);padding:0 2rem;height:56px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+[data-theme="dark"] #topbar{background:#060D18;border-bottom:1px solid var(--border);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* Theme toggle */
+.theme-btn{
+  width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.08);color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  transition:all .2s;
+}
+.theme-btn:hover{background:rgba(255,255,255,.18);}
+
+.wallet-pill{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:100px;padding:6px 14px;cursor:pointer;
+  font-size:12px;font-weight:600;color:#fff;transition:all .2s;
+}
+.wallet-pill:hover{background:rgba(255,255,255,.14);}
+.wdot{width:7px;height:7px;border-radius:50%;background:#475569;flex-shrink:0;}
+.wdot.on{background:var(--green-l);box-shadow:0 0 0 3px rgba(34,197,94,.25);}
+.demo-tag{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  background:rgba(234,88,12,.2);color:#FB923C;
+  border:1px solid rgba(234,88,12,.3);border-radius:100px;padding:3px 10px;
+}
+
+/* ══ PANTALLAS ══════════════════════════════════════════ */
+.screen{
+  position:fixed;inset:56px 0 0 0;
+  display:flex;align-items:center;justify-content:center;
+  padding:2rem;overflow-y:auto;
+}
+
+/* ══ CARDS ══════════════════════════════════════════════ */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;box-shadow:var(--shadow);
+  transition:background .3s,border-color .3s;
+}
+.rol-card{
+  width:210px;padding:2.5rem 1.5rem;border-radius:20px;
+  background:var(--surface);border:2px solid var(--border);
+  text-align:center;cursor:pointer;transition:all .25s;
+}
+.rol-card:hover{
+  border-color:var(--sky);transform:translateY(-4px);
+  box-shadow:var(--shadow-lg);
+}
+
+/* ══ INPUTS ═════════════════════════════════════════════ */
+.input-field{
+  width:100%;padding:.875rem 1rem;border-radius:12px;
+  border:1.5px solid var(--border);background:var(--surface2);
+  font-size:14px;font-family:'DM Sans',sans-serif;
+  color:var(--text);outline:none;transition:all .2s;
+}
+.input-field:focus{border-color:var(--sky);background:var(--surface);}
+.input-label{
+  font-size:12px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:block;
+}
+
+/* ══ BOTONES ════════════════════════════════════════════ */
+.btn-primary{
+  background:var(--navy);color:#fff;border:none;cursor:pointer;
+  padding:.875rem 1.5rem;border-radius:12px;font-size:14px;
+  font-weight:600;font-family:'DM Sans',sans-serif;
+  transition:all .2s;width:100%;
+}
+.btn-primary:hover{background:var(--blue);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary.demo-btn{background:linear-gradient(135deg,#7C3AED,var(--blue));}
+.btn-primary.testnet-btn{background:linear-gradient(135deg,var(--green),#15803D);}
+.btn-ghost{
+  background:none;border:1.5px solid var(--border);color:var(--muted);
+  padding:.7rem 1.2rem;border-radius:10px;font-size:13px;
+  font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+.btn-ghost:hover{border-color:var(--navy);color:var(--text);}
+.btn-sm{
+  padding:.45rem .9rem;border-radius:8px;font-size:12px;
+  font-weight:600;border:none;cursor:pointer;
+  font-family:'DM Sans',sans-serif;transition:all .2s;
+}
+
+/* ══ PASOS ══════════════════════════════════════════════ */
+.steps-bar{display:flex;align-items:center;margin-bottom:2rem;}
+.step-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.step-circle{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;font-family:'Syne',sans-serif;
+  background:var(--border);color:var(--muted);transition:all .3s;
+}
+.step-circle.active{background:var(--navy);color:#fff;}
+.step-circle.done{background:var(--green);color:#fff;}
+.step-label{font-size:11px;font-weight:600;color:var(--muted);text-align:center;line-height:1.3;transition:color .3s;}
+.step-label.active{color:var(--text);}
+.step-label.done{color:var(--green);}
+.step-line{flex:.4;height:2px;background:var(--border);margin-bottom:20px;transition:background .3s;}
+.step-line.done{background:var(--green);}
+
+/* ══ MODO CARDS ═════════════════════════════════════════ */
+.modo-card{
+  flex:1;border:2px solid var(--border);border-radius:16px;
+  padding:1.5rem;cursor:pointer;transition:all .25s;
+  background:var(--surface);text-align:center;
+}
+.modo-card:hover{border-color:var(--sky);background:var(--surface2);transform:translateY(-2px);}
+.modo-card.selected{border-color:var(--sky);background:var(--surface2);}
+.modo-check{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--sky);color:#fff;font-size:11px;
+  align-items:center;justify-content:center;display:none;margin:0 auto .5rem;
+}
+.modo-card.selected .modo-check{display:flex;}
+
+/* ══ LIBRO CHIPS ════════════════════════════════════════ */
+.libro-chip{
+  display:flex;align-items:center;gap:10px;
+  padding:.875rem 1rem;border-radius:12px;
+  border:2px solid var(--border);background:var(--surface);
+  cursor:pointer;transition:all .2s;
+}
+.libro-chip:hover{border-color:var(--sky);background:var(--surface2);}
+.libro-chip.selected{border-color:var(--sky);background:var(--surface2);}
+
+/* ══ DROP ZONE ══════════════════════════════════════════ */
+.drop-zone{
+  border:2px dashed var(--border);border-radius:16px;
+  padding:2.5rem;text-align:center;cursor:pointer;
+  transition:all .25s;background:var(--surface2);
+}
+.drop-zone:hover,.drop-zone.over{border-color:var(--sky);background:var(--surface);}
+.drop-zone.has-file{border-color:var(--green);background:var(--surface);border-style:solid;}
+
+/* ══ SELLO EXITOSO ══════════════════════════════════════ */
+.sello-success{
+  background:var(--surface2);border:2px solid var(--green-l);
+  border-radius:20px;padding:2rem;text-align:center;
+}
+[data-theme="dark"] .sello-success{background:#0D2818;}
+.detalle-btn{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:.75rem 1rem;margin-top:1rem;
+  font-size:12px;color:var(--muted);cursor:pointer;text-align:left;
+}
+
+/* ══ TABLA ══════════════════════════════════════════════ */
+.tabla-wrap{border-radius:16px;overflow:hidden;border:1px solid var(--border);}
+table{border-collapse:collapse;width:100%;background:var(--surface);}
+th{
+  font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted);padding:14px 20px;
+  text-align:left;background:var(--surface2);border-bottom:1px solid var(--border);
+}
+td{padding:14px 20px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--surface2);}
+
+/* ══ BADGES ═════════════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:600;}
+.badge.privado{background:var(--surface2);color:var(--muted);}
+.badge.pendiente{background:#FFF7ED;color:var(--orange);border:1px solid #FED7AA;}
+.badge.abierto{background:#F0FDF4;color:var(--green);border:1px solid #BBF7D0;}
+.badge.testnet{background:#F0FDF4;color:var(--green);border:1px solid #BBF7D0;}
+[data-theme="dark"] .badge.pendiente{background:#2D1A0A;color:#FB923C;}
+[data-theme="dark"] .badge.abierto{background:#0D2818;color:#4ADE80;}
+
+/* ══ NOTIF BANNER ═══════════════════════════════════════ */
+.notif-banner{
+  background:#FFF7ED;border:1.5px solid #FED7AA;
+  border-radius:14px;padding:1rem 1.25rem;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:1rem;margin-bottom:.75rem;
+}
+[data-theme="dark"] .notif-banner{background:#2D1A0A;border-color:#92400E;}
+
+/* ══ DASHBOARD ══════════════════════════════════════════ */
+#dashboard{position:fixed;inset:56px 0 0 0;display:flex;}
+.sidebar{
+  width:260px;min-width:260px;background:var(--navy);
+  padding:1.5rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;
+}
+[data-theme="dark"] .sidebar{background:#060D18;border-right:1px solid var(--border);}
+.sidebar-section{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;padding:1rem;
+}
+[data-theme="dark"] .sidebar-section{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.06);}
+.sidebar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-bottom:4px;}
+.sidebar-value{font-size:13px;font-weight:600;color:#fff;}
+.sidebar-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;}
+.main-content{flex:1;overflow-y:auto;padding:2rem 2.5rem;background:var(--bg);}
+
+/* ══ MODO BADGE ═════════════════════════════════════════ */
+.mode-badge{
+  border-radius:10px;padding:.6rem 1rem;
+  font-size:11px;font-weight:700;text-align:center;
+}
+.mode-badge.demo{background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);color:#C4B5FD;}
+.mode-badge.testnet{background:rgba(22,163,74,.15);border:1px solid rgba(22,163,74,.3);color:#86EFAC;}
+.mode-badge.mainnet{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93C5FD;}
+
+/* ══ VERIFICACION ═══════════════════════════════════════ */
+.verif-zone{
+  border:2px dashed #BBF7D0;border-radius:16px;
+  padding:2rem;text-align:center;cursor:pointer;
+  background:var(--surface2);transition:all .2s;margin-bottom:1.5rem;
+}
+[data-theme="dark"] .verif-zone{border-color:#166534;background:#0D2818;}
+.verif-zone:hover{border-color:var(--green);}
+.result-ok{background:var(--surface2);border:2px solid var(--green-l);border-radius:16px;padding:1.5rem;}
+.result-fail{background:var(--surface2);border:2px solid #FCA5A5;border-radius:16px;padding:1.5rem;}
+[data-theme="dark"] .result-ok{background:#0D2818;}
+[data-theme="dark"] .result-fail{background:#2D0A0A;}
+
+/* ══ DRIVE INFO ═════════════════════════════════════════ */
+.drive-info{
+  background:#EFF6FF;border:1.5px solid #BFDBFE;
+  border-radius:14px;padding:1rem 1.25rem;
+  margin-top:1rem;font-size:13px;color:var(--blue);line-height:1.6;
+}
+[data-theme="dark"] .drive-info{background:#0C1A35;border-color:#1D4ED8;color:#93C5FD;}
+.drive-info strong{display:block;font-weight:700;margin-bottom:.25rem;}
+
+/* ══ PLANES ═════════════════════════════════════════════ */
+.plan-card{
+  border:2px solid var(--border);border-radius:20px;
+  padding:1.5rem;background:var(--surface);
+  transition:all .25s;position:relative;
+}
+.plan-card.popular{border-color:var(--sky);box-shadow:0 4px 24px rgba(59,130,246,.15);}
+.plan-popular-tag{
+  position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+  background:var(--sky);color:#fff;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;
+  border-radius:100px;padding:4px 14px;white-space:nowrap;
+}
+
+/* ══ TIPO DETECTADO ════════════════════════════════════ */
+.tipo-detectado{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#F0FDF4;border:1.5px solid #BBF7D0;
+  border-radius:100px;padding:6px 14px;
+  font-size:13px;font-weight:600;color:var(--green);
+}
+[data-theme="dark"] .tipo-detectado{background:#0D2818;border-color:#166534;color:#4ADE80;}
+
+/* ══ TOASTS ═════════════════════════════════════════════ */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{
+  background:var(--navy);color:#fff;border-radius:12px;
+  padding:12px 18px;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:10px;max-width:320px;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+  animation:toastIn .3s ease;font-family:'DM Sans',sans-serif;
+}
+[data-theme="dark"] .toast{background:#1E2533;border:1px solid var(--border);}
+.toast.ok{border-left:3px solid var(--green-l);}
+.toast.err{border-left:3px solid #F87171;}
+.toast.warn{border-left:3px solid #FB923C;}
+.toast.info{border-left:3px solid var(--sky);}
+@keyframes toastIn{from{transform:translateX(60px);opacity:0}to{transform:none;opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+
+/* ══ TIPO MANUAL GRID ═══════════════════════════════════ */
+.tipo-manual-wrap{display:grid;grid-template-columns:1fr 1fr;gap:.65rem;margin-top:.75rem;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <svg width="28" height="31" viewBox="0 0 100 110" fill="none">
+      <path d="M50 4 L90 18 L90 50 C90 74 72 92 50 100 C28 92 10 74 10 50 L10 18 Z" fill="url(#g1)"/>
+      <defs><linearGradient id="g1" x1="50" y1="4" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563B0"/><stop offset="100%" stop-color="#1a3a6b"/></linearGradient></defs>
+      <path d="M50 10 L85 22 L85 50 C85 71 69 88 50 95 C31 88 15 71 15 50 L15 22 Z" fill="#0D1F3C" opacity=".5"/>
+      <polyline points="30,52 43,66 70,36" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <span style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:#fff;">Cer<span style="color:#3B82F6;">time</span></span>
+  </div>
+  <div class="topbar-right">
+    <span class="demo-tag" id="demoTag">Demo</span>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn" title="Cambiar tema">🌙</button>
+    <div class="wallet-pill" onclick="connectWallet()">
+      <span class="wdot" id="wDot"></span>
+      <span id="wLabel">Conectar wallet</span>
+    </div>
+  </div>
+</div>
+<div id="toasts"></div>
+
+<!-- ══ PANTALLA 0: ROL ══════════════════════════════════ -->
+<div class="screen" id="s0">
+  <div style="text-align:center;max-width:560px;width:100%;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:1.5rem;">
+      <svg width="44" height="49" viewBox="0 0 100 110" fill="none">
+        <path d="M50 4 L90 18 L90 50 C90 74 72 92 50 100 C28 92 10 74 10 50 L10 18 Z" fill="url(#g2)"/>
+        <defs><linearGradient id="g2" x1="50" y1="4" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#2563B0"/><stop offset="100%" stop-color="#1a3a6b"/></linearGradient></defs>
+        <path d="M50 10 L85 22 L85 50 C85 71 69 88 50 95 C31 88 15 71 15 50 L15 22 Z" fill="#0D1F3C" opacity=".5"/>
+        <polyline points="30,52 43,66 70,36" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <h1 style="font-size:2.8rem;font-weight:800;color:var(--navy);">Cer<span style="color:var(--sky);">time</span></h1>
+    </div>
+    <p style="color:var(--muted);font-size:15px;margin-bottom:2.5rem;line-height:1.6;">Protección legal de documentos contables ante el DS 303-2025-EF.<br>¿Con qué rol ingresas hoy?</p>
+    <div style="display:flex;gap:1.5rem;justify-content:center;">
+      <div class="rol-card" onclick="selRol('CONTADOR')">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">🧮</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.4rem;">Soy Contador</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Protejo mis documentos antes de cualquier auditoría</div>
+      </div>
+      <div class="rol-card" onclick="selRol('AUDITOR')">
+        <div style="font-size:2.5rem;margin-bottom:1rem;">🔍</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.4rem;">Soy Auditor</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Verifico la integridad de documentos sellados</div>
+      </div>
+    </div>
+    <p style="margin-top:2rem;font-size:12px;color:var(--muted-l);">⚡ Modo demo — no necesitas instalar nada para probar</p>
+  </div>
+</div>
+
+<!-- ══ LOGIN ════════════════════════════════════════════ -->
+<div class="screen hidden" id="sLogin">
+  <div class="card" style="width:100%;max-width:420px;padding:2.5rem;">
+    <button onclick="go('s0')" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;margin-bottom:1.5rem;display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;">← Regresar</button>
+    <h2 id="loginTitle" style="font-size:1.5rem;font-weight:800;color:var(--text);margin-bottom:.4rem;"></h2>
+    <p id="loginSub" style="font-size:13px;color:var(--muted);margin-bottom:2rem;line-height:1.5;"></p>
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div><label class="input-label">Tu nombre</label><input class="input-field" id="iNombre" placeholder="Ej. María Quispe"></div>
+      <div><label class="input-label">Empresa o cliente</label><input class="input-field" id="iEmpresa" placeholder="Razón social"></div>
+      <div><label class="input-label">RUC</label><input class="input-field" id="iRUC" placeholder="11 dígitos"></div>
+      <button class="btn-primary" onclick="login()" style="margin-top:.5rem;">Ingresar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DASHBOARD ════════════════════════════════════════ -->
+<div id="dashboard" class="hidden">
+  <aside class="sidebar">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:.25rem;">
+      <svg width="24" height="27" viewBox="0 0 100 110" fill="none">
+        <path d="M50 4 L90 18 L90 50 C90 74 72 92 50 100 C28 92 10 74 10 50 L10 18 Z" fill="url(#g3)"/>
+        <defs><linearGradient id="g3" x1="50" y1="4" x2="50" y2="100" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#3B82F6"/><stop offset="100%" stop-color="#2563B0"/></linearGradient></defs>
+        <polyline points="30,52 43,66 70,36" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:#fff;">Cer<span style="color:#3B82F6;">time</span></span>
+    </div>
+
+    <div class="mode-badge demo" id="modeBadge">⚡ Modo Demo</div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Profesional</div>
+      <div class="sidebar-value" id="sNombre"></div>
+      <div class="sidebar-sub" id="sEmpresa"></div>
+      <div class="sidebar-sub" id="sRUC"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Rol</div>
+      <div class="sidebar-value" id="sRol"></div>
+    </div>
+
+    <!-- Planes -->
+    <div class="sidebar-section" id="sPlanes">
+      <div class="sidebar-label">Plan actual</div>
+      <div class="sidebar-value" id="sPlanNombre" style="color:#FB923C;">Prueba gratuita</div>
+      <div class="sidebar-sub" id="sPlanSellos">3 sellos disponibles</div>
+      <button onclick="go('sPlanes')" style="width:100%;margin-top:.75rem;background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.3);color:#93C5FD;padding:8px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">Ver planes →</button>
+    </div>
+
+    <div style="flex:1;"></div>
+    <button onclick="location.reload()" style="width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);padding:10px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Cerrar sesión</button>
+    <button onclick="resetDB()" style="width:100%;background:none;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.25);padding:8px;border-radius:10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;">Borrar datos de prueba</button>
+  </aside>
+
+  <div class="main-content">
+
+    <!-- ─── ZONA CONTADOR ─── -->
+    <div id="zonaContador" class="hidden">
+      <div class="steps-bar">
+        <div class="step-item"><div class="step-circle active" id="sc1">1</div><div class="step-label active" id="sl1">¿Cómo subir?</div></div>
+        <div class="step-line" id="line1"></div>
+        <div class="step-item"><div class="step-circle" id="sc2">2</div><div class="step-label" id="sl2">Sube el archivo</div></div>
+        <div class="step-line" id="line2"></div>
+        <div class="step-item"><div class="step-circle" id="sc3">3</div><div class="step-label" id="sl3">¡Protegido!</div></div>
+      </div>
+
+      <!-- Paso 1 -->
+      <div id="paso1" class="card" style="padding:1.75rem;">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.4rem;">¿Cómo quieres identificar el documento?</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem;line-height:1.5;">Certime puede detectar automáticamente el tipo de libro por el nombre del archivo — o si prefieres, elige tú.</p>
+        <div style="display:flex;gap:1rem;">
+          <div class="modo-card" id="modoAuto" onclick="elegirModo('auto')">
+            <div class="modo-check" id="checkAuto">✓</div>
+            <div style="font-size:1.8rem;margin-bottom:.6rem;">🤖</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:.3rem;">Detectar automático</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.4;">Certime lee el nombre del archivo y detecta el tipo al instante</div>
+          </div>
+          <div class="modo-card" id="modoManual" onclick="elegirModo('manual')">
+            <div class="modo-check" id="checkManual">✓</div>
+            <div style="font-size:1.8rem;margin-bottom:.6rem;">📋</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:.3rem;">Elegir manualmente</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.4;">Tú seleccionas qué tipo de libro estás sellando</div>
+          </div>
+        </div>
+        <button class="btn-primary" id="btnP1Next" onclick="confirmarModo()" style="margin-top:1.25rem;opacity:.5;" disabled>Continuar →</button>
+      </div>
+
+      <!-- Paso 2 -->
+      <div id="paso2" class="hidden">
+        <div class="card" style="padding:1.75rem;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+            <div>
+              <h3 style="font-size:1rem;font-weight:700;color:var(--text);" id="p2Title">Sube el archivo</h3>
+              <p style="font-size:12px;color:var(--muted);margin-top:3px;" id="p2Sub">Certime genera una huella digital única — tu documento nunca sale de tu computadora</p>
+            </div>
+            <button onclick="volverP1()" class="btn-ghost" style="font-size:11px;padding:.4rem .8rem;white-space:nowrap;">← Regresar</button>
+          </div>
+
+          <!-- Selector manual -->
+          <div id="selectorLibro" class="hidden" style="margin-bottom:1.25rem;">
+            <label class="input-label">Elige el tipo de libro</label>
+            <div class="tipo-manual-wrap" id="gridLibros"></div>
+          </div>
+
+          <!-- Drop zone -->
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('fi').click()">
+            <input type="file" id="fi" style="display:none;" onchange="onFile(this.files[0])">
+            <div id="dc">
+              <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:var(--muted-l);display:block;margin-bottom:.8rem;"></i>
+              <p style="font-size:14px;font-weight:600;color:var(--muted);margin-bottom:.3rem;">Arrastra el archivo aquí</p>
+              <p style="font-size:12px;color:var(--muted-l);">o haz clic · PDF, Excel, XML — cualquier formato</p>
+            </div>
+            <div id="ds" class="hidden" style="flex-direction:column;align-items:center;gap:10px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <i class="fas fa-file-check" style="font-size:1.5rem;color:var(--green);"></i>
+                <div style="text-align:left;">
+                  <div id="fn" style="font-size:14px;font-weight:600;color:var(--green);"></div>
+                  <div id="fs" style="font-size:12px;color:var(--muted);"></div>
+                </div>
+              </div>
+              <div id="tipoDetectado" class="hidden">
+                <span class="tipo-detectado"><span id="tipoIcon"></span> <span id="tipoNombre"></span> — detectado</span>
+                <p style="font-size:11px;color:var(--muted);margin-top:.4rem;text-align:center;">
+                  ¿No es correcto? <button onclick="mostrarCorrector(event)" style="background:none;border:none;cursor:pointer;color:var(--sky);font-size:11px;font-weight:600;">Cambiar</button>
+                </p>
+              </div>
+              <div id="correctorTipo" class="hidden" style="width:100%;">
+                <label class="input-label" style="text-align:left;">¿Cuál es el tipo correcto?</label>
+                <div class="tipo-manual-wrap" id="gridCorrector"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drive info -->
+          <div class="drive-info">
+            <strong><i class="fab fa-google-drive" style="margin-right:6px;"></i>¿Tienes este archivo en Google Drive?</strong>
+            Pega el link aquí. Solo cuando tú <strong>apruebes el acceso</strong> de un auditor, el link le aparecerá disponible para descargar. <strong>Sin tu aprobación, nadie ve nada.</strong>
+            <input class="input-field" id="urlDrive" placeholder="https://drive.google.com/file/..." style="margin-top:.75rem;">
+          </div>
+        </div>
+
+        <!-- Botón sellar — cambia según el modo -->
+        <button class="btn-primary demo-btn" id="btnSellar" onclick="sellar()" disabled>
+          <span id="btnTxt">Selecciona un archivo para continuar</span>
+        </button>
+        <p id="modoSelloInfo" style="text-align:center;font-size:11px;color:var(--muted-l);margin-top:.5rem;"></p>
+      </div>
+
+      <!-- Paso 3 -->
+      <div id="paso3" class="hidden">
+        <div class="sello-success" style="margin-bottom:1.5rem;">
+          <div style="font-size:3rem;margin-bottom:.8rem;">🔒</div>
+          <h3 style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--green);margin-bottom:.5rem;">¡Documento protegido!</h3>
+          <p id="msgExito" style="font-size:14px;color:var(--muted);line-height:1.6;max-width:440px;margin:0 auto 1rem;"></p>
+          <div class="detalle-btn" onclick="toggleHash()">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">🔬 Ver huella digital técnica →</span>
+            <div id="hashDet" class="hidden" style="margin-top:.6rem;font-family:'Courier New',monospace;font-size:11px;word-break:break-all;line-height:1.7;color:var(--muted);">
+              <div><span>SHA-256: </span><span id="hVal"></span></div>
+              <div><span>Sello: </span><span id="tVal"></span></div>
+              <div id="explorerLink" class="hidden"><span>Explorador: </span><a id="explorerA" href="#" target="_blank" style="color:var(--sky);">Ver en blockchain →</a></div>
+            </div>
+          </div>
+          <button onclick="nuevoSello()" class="btn-ghost" style="margin-top:1rem;">+ Proteger otro documento</button>
+        </div>
+
+        <div id="notifBox" class="hidden" style="margin-bottom:1.5rem;">
+          <p style="font-size:12px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;"><i class="fas fa-bell"></i> Solicitudes pendientes</p>
+          <div id="notifList"></div>
+        </div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:.75rem;">Mis documentos protegidos</h3>
+        <div class="tabla-wrap" id="tablaC"></div>
+      </div>
+
+      <!-- Tabla previa -->
+      <div id="tablaPrevia" class="hidden" style="margin-top:2rem;">
+        <div id="notifPrevBox" class="hidden" style="margin-bottom:1rem;">
+          <p style="font-size:12px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;"><i class="fas fa-bell"></i> Aprobaciones pendientes</p>
+          <div id="notifPrevList"></div>
+        </div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:.75rem;">Mis documentos protegidos</h3>
+        <div class="tabla-wrap" id="tablaCPrev"></div>
+      </div>
+    </div>
+
+    <!-- ─── ZONA AUDITOR ─── -->
+    <div id="zonaAuditor" class="hidden">
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.4rem;font-weight:800;color:var(--text);margin-bottom:.4rem;">Verificación de integridad</h2>
+        <p style="font-size:13px;color:var(--muted);line-height:1.5;max-width:560px;">Solicita acceso → el contador aprueba → descarga desde Drive → sube aquí. En 1 segundo sabes si fue alterado.</p>
+      </div>
+      <div id="verifZone" class="hidden">
+        <div class="verif-zone" onclick="document.getElementById('fCheck').click()">
+          <input type="file" id="fCheck" style="display:none;" onchange="verificar(this.files[0])">
+          <i class="fas fa-upload" style="font-size:1.8rem;color:var(--green);margin-bottom:.8rem;display:block;"></i>
+          <p style="font-size:14px;font-weight:600;color:var(--green);">Sube el archivo para verificar</p>
+          <p style="font-size:12px;color:var(--muted);margin-top:.3rem;">El documento no se envía a ningún servidor · Solo se compara la huella</p>
+        </div>
+      </div>
+      <div id="resVerif" class="hidden" style="margin-bottom:1.5rem;"></div>
+      <h3 style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:.75rem;">Documentos sellados para este RUC</h3>
+      <div class="tabla-wrap" id="tablaA"></div>
+    </div>
+
+    <!-- ─── ZONA PLANES ─── -->
+    <div id="zonaPlanes" class="hidden">
+      <div style="margin-bottom:2rem;">
+        <button onclick="volverDashboard()" class="btn-ghost" style="font-size:12px;margin-bottom:1rem;">← Volver</button>
+        <h2 style="font-size:1.4rem;font-weight:800;color:var(--text);margin-bottom:.3rem;">Planes que se ajustan a tu negocio</h2>
+        <p style="font-size:13px;color:var(--muted);">Sin costos ocultos. Sin sorpresas. Cancela cuando quieras.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;margin-bottom:2rem;" id="gridPlanes">
+        <!-- Prueba -->
+        <div class="plan-card">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">Prueba</div>
+          <div style="font-size:2rem;font-weight:800;color:var(--text);margin-bottom:.25rem;">S/ 0</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;">Para explorar Certime</div>
+          <button class="btn-primary" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);margin-bottom:1.25rem;" disabled>Plan actual</button>
+          <div style="display:flex;flex-direction:column;gap:.6rem;">
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> 3 sellos en Testnet</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Certificado descargable</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Verificación básica</div>
+          </div>
+        </div>
+        <!-- Independiente -->
+        <div class="plan-card">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">Independiente</div>
+          <div style="font-size:2rem;font-weight:800;color:var(--text);margin-bottom:.25rem;">S/ 79</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;">/mes · 1-5 clientes</div>
+          <button class="btn-primary" style="margin-bottom:1.25rem;" onclick="consultarPlan('Independiente S/79')">Contratar →</button>
+          <div style="display:flex;flex-direction:column;gap:.6rem;">
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> 100 sellos/mes en Mainnet</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Todos los libros contables</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Certificados PDF</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Soporte por email</div>
+          </div>
+        </div>
+        <!-- Estudio -->
+        <div class="plan-card popular">
+          <div class="plan-popular-tag">Más popular</div>
+          <div style="font-size:12px;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">Estudio</div>
+          <div style="font-size:2rem;font-weight:800;color:var(--text);margin-bottom:.25rem;">S/ 149</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;">/mes · 5-15 clientes</div>
+          <button class="btn-primary demo-btn" style="margin-bottom:1.25rem;" onclick="consultarPlan('Estudio S/149')">Contratar →</button>
+          <div style="display:flex;flex-direction:column;gap:.6rem;">
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> 400 sellos/mes en Mainnet</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Hasta 10 empresas</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Todos los libros contables</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Soporte prioritario</div>
+          </div>
+        </div>
+        <!-- Corporativo -->
+        <div class="plan-card">
+          <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;">Corporativo</div>
+          <div style="font-size:2rem;font-weight:800;color:var(--text);margin-bottom:.25rem;">Consultar</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:1.25rem;">Para estudios grandes</div>
+          <button class="btn-primary" style="margin-bottom:1.25rem;background:var(--green);" onclick="consultarPlan('Corporativo')">Hablar con ventas →</button>
+          <div style="display:flex;flex-direction:column;gap:.6rem;">
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Sellos ilimitados</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Empresas ilimitadas</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Precio personalizado</div>
+            <div style="font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;"><span style="color:var(--green);">✓</span> Soporte 24/7</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calculadora -->
+      <div class="card" style="padding:1.75rem;max-width:520px;">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:.4rem;">¿No sabes qué plan elegir?</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem;">Dinos cuántos clientes llevas y te decimos cuál es el tuyo.</p>
+        <div style="display:flex;flex-direction:column;gap:.75rem;">
+          <div>
+            <label class="input-label">¿Cuántos clientes llevas?</label>
+            <select class="input-field" id="calcClientes" onchange="calcularPlan()">
+              <option value="">Elige una opción</option>
+              <option value="1">1 a 3 clientes</option>
+              <option value="5">4 a 8 clientes</option>
+              <option value="10">9 a 15 clientes</option>
+              <option value="20">Más de 15 clientes</option>
+            </select>
+          </div>
+          <div id="calcResultado" class="hidden" style="background:var(--surface2);border:1.5px solid var(--sky);border-radius:14px;padding:1rem 1.25rem;">
+            <div style="font-size:12px;font-weight:700;color:var(--sky);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem;">Te recomendamos</div>
+            <div id="calcPlanNombre" style="font-size:1.1rem;font-weight:800;color:var(--text);"></div>
+            <div id="calcPlanDesc" style="font-size:12px;color:var(--muted);margin-top:.25rem;"></div>
+            <button id="calcBtn" class="btn-primary" style="margin-top:.75rem;" onclick="consultarPlanCalc()">Contratar este plan →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+const {jsPDF}=window.jspdf;
+
+// ── CONFIG API (cuando tengas Oracle cambia esto) ──────
+// const API_URL = "https://tu-api.oracle.com"; // producción
+const API_URL = null; // null = modo demo/local
+
+// ── LIBROS ────────────────────────────────────────────
+const LIBROS=[
+  {id:"ventas",   icon:"🧾",nombre:"Reg. de Ventas",    keys:["venta","sale","ingreso","ple030","rvie"]},
+  {id:"compras",  icon:"🛒",nombre:"Reg. de Compras",   keys:["compra","purchase","gasto","ple080","rcie"]},
+  {id:"diario",   icon:"📖",nombre:"Libro Diario",      keys:["diario","journal","ple050"]},
+  {id:"mayor",    icon:"🏛️",nombre:"Libro Mayor",       keys:["mayor","ledger","ple060"]},
+  {id:"inventario",icon:"📦",nombre:"Inventario",       keys:["inventario","balance","activo","pasivo","ple030000"]},
+  {id:"planilla", icon:"👥",nombre:"Planilla",          keys:["planilla","remuner","sueldo","t-registro"]},
+  {id:"sire",     icon:"📊",nombre:"SIRE",              keys:["sire"]},
+  {id:"otro",     icon:"📄",nombre:"Otro documento",    keys:[]},
+];
+
+// ── ESTADO ────────────────────────────────────────────
+let rol="",nombre="",empresa="",ruc="";
+let modoActivo=null,libroActivo=null,archivoActivo=null;
+let walletAddr=null,chainId=null,isDemoMode=true,_ok=false;
+let sellosDisponibles=3,planActual="Prueba";
+let calcPlanActual=null;
+
+const NETS={
+  570:{name:"Rollux Mainnet",e:"https://explorer.rollux.com/tx/"},
+  57000:{name:"Rollux Testnet",e:"https://rollux.tanenbaum.io/tx/"},
+  5700:{name:"Syscoin NEVM Testnet",e:"https://tanenbaum.io/tx/"}
+};
+
+// ── NAVEGACIÓN ────────────────────────────────────────
+function go(id){
+  ["s0","sLogin","dashboard"].forEach(s=>{
+    const e=document.getElementById(s);if(e)e.classList.add("hidden");
+  });
+  document.getElementById(id).classList.remove("hidden");
+}
+
+function volverDashboard(){
+  document.getElementById("zonaPlanes").classList.add("hidden");
+  if(rol==="CONTADOR") document.getElementById("zonaContador").classList.remove("hidden");
+  else document.getElementById("zonaAuditor").classList.remove("hidden");
+}
+
+// ── TEMA ──────────────────────────────────────────────
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute("data-theme")==="dark";
+  html.setAttribute("data-theme",isDark?"light":"dark");
+  document.getElementById("themeBtn").textContent=isDark?"🌙":"☀️";
+  localStorage.setItem("certime_theme",isDark?"light":"dark");
+}
+// Restaurar tema guardado
+(()=>{
+  const t=localStorage.getItem("certime_theme");
+  if(t==="dark"){
+    document.documentElement.setAttribute("data-theme","dark");
+    document.getElementById("themeBtn").textContent="☀️";
+  }
+})();
+
+// ── ROL Y LOGIN ───────────────────────────────────────
+function selRol(r){
+  rol=r;
+  const isC=r==="CONTADOR";
+  document.getElementById("loginTitle").textContent=isC?"Portal Contador":"Portal Auditor";
+  document.getElementById("loginSub").textContent=isC
+    ?"Ingresa tus datos para proteger tus documentos contables."
+    :"Ingresa tus datos para verificar documentos sellados.";
+  go("sLogin");
+}
+
+function login(){
+  nombre=document.getElementById("iNombre").value.trim();
+  empresa=document.getElementById("iEmpresa").value.trim();
+  ruc=document.getElementById("iRUC").value.trim();
+  if(!nombre||!empresa||!ruc){toast("Completa todos los campos.","err");return;}
+  document.getElementById("sNombre").textContent=nombre;
+  document.getElementById("sEmpresa").textContent=empresa;
+  document.getElementById("sRUC").textContent="RUC: "+ruc;
+  document.getElementById("sRol").textContent=rol==="CONTADOR"?"🧮 Contador":"🔍 Auditor";
+  // Recuperar sellos del usuario
+  const userData=getUserData();
+  sellosDisponibles=userData.sellos??3;
+  planActual=userData.plan??"Prueba";
+  updatePlanUI();
+  updateWUI();
+  go("dashboard");
+  if(rol==="CONTADOR")initC();else initA();
+}
+
+// ── WALLET ────────────────────────────────────────────
+function detectP(){
+  if(typeof window.pali!=="undefined"&&window.pali.request)return window.pali;
+  if(typeof window.ethereum!=="undefined"&&window.ethereum.request)return window.ethereum;
+  return null;
+}
+
+async function connectWallet(){
+  const p=detectP();
+  if(!p){toast("No se detectó wallet. Continuando en modo demo.","warn");return;}
+  try{
+    const a=await p.request({method:"eth_requestAccounts"});
+    walletAddr=a?.[0]||null;
+    const h=await p.request({method:"eth_chainId"});
+    chainId=parseInt(h,16);
+    isDemoMode=false;
+    if(!_ok){_ok=true;
+      p.on("accountsChanged",a=>{walletAddr=a?.[0]||null;isDemoMode=!walletAddr;updateWUI();});
+      p.on("chainChanged",h=>{chainId=parseInt(h,16);updateWUI();});
+    }
+    updateWUI();
+    toast("Wallet conectada: "+walletAddr.slice(0,6)+"…"+walletAddr.slice(-4),"ok");
+  }catch(e){if(e.code===4001)toast("Conexión rechazada.","warn");}
+}
+
+function updateWUI(){
+  const dot=document.getElementById("wDot"),lbl=document.getElementById("wLabel");
+  const tag=document.getElementById("demoTag"),badge=document.getElementById("modeBadge");
+  if(walletAddr&&!isDemoMode){
+    dot.className="wdot on";
+    lbl.textContent=walletAddr.slice(0,6)+"…"+walletAddr.slice(-4);
+    tag.style.display="none";
+    if(badge){badge.className="mode-badge mainnet";badge.textContent="🔗 Blockchain Real";}
+    updateBtnSellar();
+  }else{
+    dot.className="wdot";lbl.textContent="Conectar wallet";tag.style.display="";
+    if(badge){badge.className="mode-badge demo";badge.textContent="⚡ Modo Demo";}
+  }
+}
+
+// ── PLAN UI ───────────────────────────────────────────
+function updatePlanUI(){
+  document.getElementById("sPlanNombre").textContent=planActual;
+  document.getElementById("sPlanSellos").textContent=
+    sellosDisponibles>0?`${sellosDisponibles} sellos disponibles`:"Sin sellos — actualiza tu plan";
+  document.getElementById("sPlanSellos").style.color=sellosDisponibles>0?"rgba(255,255,255,.5)":"#F87171";
+}
+
+// ── CONTADOR: INIT ────────────────────────────────────
+function initC(){
+  document.getElementById("zonaContador").classList.remove("hidden");
+  document.getElementById("zonaAuditor").classList.add("hidden");
+  document.getElementById("zonaPlanes").classList.add("hidden");
+
+  const chips=LIBROS.map(l=>
+    `<div class="libro-chip" id="chip_${l.id}" onclick="elegirLibroManual('${l.id}')">
+      <span style="font-size:1.1rem;">${l.icon}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--text);">${l.nombre}</span>
+    </div>`
+  ).join("");
+  document.getElementById("gridLibros").innerHTML=chips;
+  document.getElementById("gridCorrector").innerHTML=chips.replace(/elegirLibroManual/g,"elegirCorrector");
+
+  const dz=document.getElementById("dropZone");
+  dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("over");});
+  dz.addEventListener("dragleave",()=>dz.classList.remove("over"));
+  dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("over");onFile(e.dataTransfer.files[0]);});
+
+  renderTPrev();
+}
+
+function elegirModo(m){
+  modoActivo=m;
+  ["modoAuto","modoManual"].forEach(id=>document.getElementById(id).classList.remove("selected"));
+  document.getElementById("checkAuto").style.display="none";
+  document.getElementById("checkManual").style.display="none";
+  const key="modo"+m.charAt(0).toUpperCase()+m.slice(1);
+  document.getElementById(key).classList.add("selected");
+  document.getElementById("check"+m.charAt(0).toUpperCase()+m.slice(1)).style.display="flex";
+  document.getElementById("btnP1Next").disabled=false;
+  document.getElementById("btnP1Next").style.opacity="1";
+}
+
+function confirmarModo(){
+  if(!modoActivo)return;
+  document.getElementById("paso1").classList.add("hidden");
+  document.getElementById("paso2").classList.remove("hidden");
+  if(modoActivo==="manual"){
+    document.getElementById("selectorLibro").classList.remove("hidden");
+    document.getElementById("p2Title").textContent="Elige el tipo y sube el archivo";
+    document.getElementById("p2Sub").textContent="Primero selecciona el tipo, luego arrastra el archivo";
+  }else{
+    document.getElementById("selectorLibro").classList.add("hidden");
+    document.getElementById("p2Title").textContent="Sube el archivo";
+    document.getElementById("p2Sub").textContent="Certime detecta automáticamente el tipo de libro por el nombre del archivo";
+  }
+  setStep(2);
+}
+
+function volverP1(){
+  modoActivo=null;libroActivo=null;archivoActivo=null;
+  ["modoAuto","modoManual"].forEach(id=>document.getElementById(id).classList.remove("selected"));
+  document.getElementById("checkAuto").style.display="none";
+  document.getElementById("checkManual").style.display="none";
+  document.getElementById("btnP1Next").disabled=true;
+  document.getElementById("btnP1Next").style.opacity=".5";
+  document.getElementById("paso2").classList.add("hidden");
+  document.getElementById("paso1").classList.remove("hidden");
+  resetDrop();setStep(1);
+}
+
+function resetDrop(){
+  document.getElementById("dropZone").classList.remove("has-file");
+  document.getElementById("dc").classList.remove("hidden");
+  const ds=document.getElementById("ds");ds.classList.add("hidden");ds.style.display="none";
+  document.getElementById("fi").value="";
+  document.getElementById("tipoDetectado").classList.add("hidden");
+  document.getElementById("correctorTipo").classList.add("hidden");
+  archivoActivo=null;updateBtnSellar();
+}
+
+function detectarLibro(fn){
+  const f=fn.toLowerCase();
+  for(const l of LIBROS){if(l.id==="otro")continue;for(const k of l.keys){if(f.includes(k))return l;}}
+  return LIBROS.find(l=>l.id==="otro");
+}
+
+function elegirLibroManual(id){
+  libroActivo=LIBROS.find(l=>l.id===id);
+  document.querySelectorAll("#gridLibros .libro-chip").forEach(c=>c.classList.remove("selected"));
+  document.getElementById("chip_"+id)?.classList.add("selected");
+  updateBtnSellar();
+}
+
+function elegirCorrector(id){
+  libroActivo=LIBROS.find(l=>l.id===id);
+  document.getElementById("tipoIcon").textContent=libroActivo.icon;
+  document.getElementById("tipoNombre").textContent=libroActivo.nombre;
+  document.getElementById("tipoDetectado").classList.remove("hidden");
+  document.getElementById("correctorTipo").classList.add("hidden");
+  updateBtnSellar();
+}
+
+function mostrarCorrector(e){e.stopPropagation();document.getElementById("correctorTipo").classList.remove("hidden");}
+
+function onFile(f){
+  if(!f)return;
+  archivoActivo=f;
+  document.getElementById("dc").classList.add("hidden");
+  const ds=document.getElementById("ds");
+  ds.classList.remove("hidden");ds.style.display="flex";
+  document.getElementById("fn").textContent=f.name;
+  document.getElementById("fs").textContent=(f.size/1024).toFixed(1)+" KB";
+  document.getElementById("dropZone").classList.add("has-file");
+  if(modoActivo==="auto"){
+    const det=detectarLibro(f.name);
+    libroActivo=det;
+    document.getElementById("tipoIcon").textContent=det.icon;
+    document.getElementById("tipoNombre").textContent=det.nombre;
+    document.getElementById("tipoDetectado").classList.remove("hidden");
+  }
+  updateBtnSellar();
+}
+
+function updateBtnSellar(){
+  const btn=document.getElementById("btnSellar");
+  const info=document.getElementById("modoSelloInfo");
+  const listo=archivoActivo&&libroActivo;
+  btn.disabled=!listo;
+  if(!archivoActivo){
+    document.getElementById("btnTxt").textContent="Selecciona un archivo para continuar";
+    btn.className="btn-primary demo-btn";
+    if(info)info.textContent="";
+  }else if(!libroActivo){
+    document.getElementById("btnTxt").textContent="Elige el tipo de libro primero";
+    if(info)info.textContent="";
+  }else if(API_URL){
+    // Backend disponible → sello real en testnet
+    btn.className="btn-primary testnet-btn";
+    document.getElementById("btnTxt").textContent="🔒 Sellar en Syscoin Testnet";
+    if(info)info.textContent="Sello real · TXID verificable en blockchain · Sin costo para ti";
+  }else if(!isDemoMode&&walletAddr){
+    btn.className="btn-primary";
+    document.getElementById("btnTxt").textContent="🔒 Sellar en Blockchain";
+    if(info)info.textContent=NETS[chainId]?`Red: ${NETS[chainId].name}`:"Verifica tu red en la wallet";
+  }else{
+    btn.className="btn-primary demo-btn";
+    document.getElementById("btnTxt").textContent="🔒 Proteger documento (Demo)";
+    if(info)info.textContent="⚡ Modo demo · TXID simulado · Sin wallet requerida";
+  }
+}
+
+async function sellar(){
+  if(!archivoActivo||!libroActivo)return;
+  if(sellosDisponibles<=0){
+    toast("Sin sellos disponibles. Actualiza tu plan.","warn");
+    mostrarPlanes();return;
+  }
+  const btn=document.getElementById("btnSellar");
+  btn.disabled=true;
+  document.getElementById("btnTxt").innerHTML='<span class="spin">⏳</span> Generando huella digital…';
+
+  const buf=await archivoActivo.arrayBuffer();
+  const hBuf=await crypto.subtle.digest("SHA-256",buf);
+  const hash=Array.from(new Uint8Array(hBuf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+
+  let txid=null,explorerUrl=null,modoUsado="demo";
+
+  if(API_URL){
+    // ── BACKEND (Oracle/testnet) ──
+    try{
+      document.getElementById("btnTxt").innerHTML='<span class="spin">⚡</span> Sellando en Syscoin Testnet…';
+      const res=await fetch(`${API_URL}/api/sellar`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({hash,ruc,libro:libroActivo.nombre,empresa})
+      });
+      const data=await res.json();
+      if(!data.txid)throw new Error(data.error||"Error en backend");
+      txid=data.txid;
+      explorerUrl=data.explorerUrl||null;
+      modoUsado="testnet";
+    }catch(e){
+      btn.disabled=false;
+      document.getElementById("btnTxt").textContent="🔒 Sellar en Syscoin Testnet";
+      toast("Error al sellar: "+e.message,"err");return;
+    }
+  }else if(!isDemoMode&&walletAddr){
+    // ── WALLET DIRECTA ──
+    try{
+      document.getElementById("btnTxt").innerHTML='<span class="spin">👛</span> Confirma en tu wallet…';
+      txid=await anchorOnChain(hash);
+      explorerUrl=NETS[chainId]?NETS[chainId].e+txid:null;
+      modoUsado="wallet";
+    }catch(e){
+      btn.disabled=false;
+      document.getElementById("btnTxt").textContent="🔒 Sellar en Blockchain";
+      toast(e.code===4001?"Transacción rechazada.":"Error: "+e.message,"err");return;
+    }
+  }else{
+    // ── DEMO ──
+    document.getElementById("btnTxt").innerHTML='<span class="spin">⚡</span> Registrando en blockchain…';
+    await new Promise(r=>setTimeout(r,1800));
+    txid="demo-"+Math.random().toString(36).slice(2,18);
+    modoUsado="demo";
+  }
+
+  // Descontar sello
+  sellosDisponibles=Math.max(0,sellosDisponibles-1);
+  const userData=getUserData();
+  userData.sellos=sellosDisponibles;
+  saveUserData(userData);
+  updatePlanUI();
+
+  const fecha=new Date().toLocaleString("es-PE");
+  let db=getDB();
+  db.push({ruc,nombre,empresa,hash,txid,fecha,
+    libro:libroActivo.nombre,libroId:libroActivo.id,libroIcon:libroActivo.icon,
+    link:document.getElementById("urlDrive").value.trim(),
+    modo:modoUsado,explorerUrl,solicitado:false,habilitado:false});
+  saveDB(db);
+
+  document.getElementById("paso2").classList.add("hidden");
+  document.getElementById("paso3").classList.remove("hidden");
+  setStep(3);
+
+  const modoLabel=modoUsado==="testnet"?"🟢 Sello real en Syscoin Testnet":modoUsado==="wallet"?"🔗 Sello real en Blockchain":"⚡ Sello de demostración";
+  document.getElementById("msgExito").innerHTML=
+    `Tu <strong>${libroActivo.nombre}</strong> quedó protegido el <strong>${fecha}</strong>.<br>
+     Nadie puede modificarlo sin que Certime lo detecte al instante.<br>
+     <span style="font-size:11px;color:var(--muted-l);">${modoLabel}</span>`;
+  document.getElementById("hVal").textContent=hash;
+  document.getElementById("tVal").textContent=txid;
+  if(explorerUrl){
+    document.getElementById("explorerLink").classList.remove("hidden");
+    document.getElementById("explorerA").href=explorerUrl;
+  }
+
+  renderTablaC("tablaC");renderNotif("notifList","notifBox");
+  const sellosMsg=sellosDisponibles>0?`Te quedan ${sellosDisponibles} sellos.`:"Usaste todos tus sellos gratuitos.";
+  toast("✓ Documento protegido. "+sellosMsg,"ok");
+
+  if(sellosDisponibles===0){
+    setTimeout(()=>toast("¿Listo para sellos reales? Mira los planes disponibles.","info"),2000);
+  }
+}
+
+function toggleHash(){document.getElementById("hashDet").classList.toggle("hidden");}
+
+function nuevoSello(){
+  libroActivo=null;archivoActivo=null;modoActivo=null;
+  document.getElementById("paso3").classList.add("hidden");
+  document.getElementById("paso1").classList.remove("hidden");
+  resetDrop();
+  ["modoAuto","modoManual"].forEach(id=>document.getElementById(id).classList.remove("selected"));
+  document.getElementById("checkAuto").style.display="none";
+  document.getElementById("checkManual").style.display="none";
+  document.getElementById("btnP1Next").disabled=true;
+  document.getElementById("btnP1Next").style.opacity=".5";
+  document.getElementById("urlDrive").value="";
+  document.getElementById("explorerLink").classList.add("hidden");
+  setStep(1);renderTPrev();
+}
+
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    const c=document.getElementById("sc"+i),l=document.getElementById("sl"+i);
+    if(i<n){c.className="step-circle done";c.textContent="✓";l.className="step-label done";}
+    else if(i===n){c.className="step-circle active";c.textContent=i;l.className="step-label active";}
+    else{c.className="step-circle";c.textContent=i;l.className="step-label";}
+    if(i<3)document.getElementById("line"+i).className=i<n?"step-line done":"step-line";
+  });
+}
+
+// ── TABLAS ────────────────────────────────────────────
+function renderTablaC(elId){
+  const db=getDB().filter(i=>i.ruc===ruc);
+  const el=document.getElementById(elId);if(!el)return;
+  if(!db.length){el.innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px;">Aún no tienes documentos protegidos.</div>`;return;}
+  el.innerHTML=`<table><thead><tr>
+    <th>Documento</th><th>Protegido el</th><th>Modo</th><th>Estado</th>
+    <th style="text-align:right;">Acciones</th>
+  </tr></thead><tbody>${db.map(it=>`<tr>
+    <td><span style="margin-right:6px;">${it.libroIcon||"📄"}</span><strong>${it.libro}</strong></td>
+    <td style="color:var(--muted);font-size:12px;">${it.fecha}</td>
+    <td><span style="font-size:11px;color:var(--muted-l);">${it.modo==="testnet"?"🟢 Testnet":it.modo==="wallet"?"🔗 Real":"⚡ Demo"}</span></td>
+    <td>${badgeEstado(it)}</td>
+    <td style="text-align:right;display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+      ${it.solicitado&&!it.habilitado?`<button class="btn-sm" style="background:#FFF7ED;color:var(--orange);border:1px solid #FED7AA;" onclick="aprobar('${it.hash}')"><i class="fas fa-unlock"></i> Aprobar</button>`:""}
+      ${it.explorerUrl?`<button class="btn-sm" style="background:var(--surface2);color:var(--muted);" onclick="window.open('${it.explorerUrl}','_blank')"><i class="fas fa-external-link-alt"></i></button>`:""}
+      <button class="btn-sm" style="background:#EFF6FF;color:var(--blue);" onclick="dlCert('${it.hash}')"><i class="fas fa-file-pdf"></i></button>
+    </td>
+  </tr>`).join("")}</tbody></table>`;
+}
+
+function renderNotif(listId,boxId){
+  const p=getDB().filter(i=>i.ruc===ruc&&i.solicitado&&!i.habilitado);
+  const box=document.getElementById(boxId),list=document.getElementById(listId);
+  if(!box||!list)return;
+  if(!p.length){box.classList.add("hidden");return;}
+  box.classList.remove("hidden");
+  list.innerHTML=p.map(it=>`
+    <div class="notif-banner">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span>${it.libroIcon||"📄"}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">${it.libro}</div>
+          <div style="font-size:11px;color:var(--muted);">El auditor solicita acceso</div>
+        </div>
+      </div>
+      <button class="btn-sm" style="background:var(--green);color:#fff;white-space:nowrap;" onclick="aprobar('${it.hash}')">
+        <i class="fas fa-unlock" style="margin-right:4px;"></i>Aprobar
+      </button>
+    </div>`).join("");
+}
+
+function renderTPrev(){
+  const db=getDB().filter(i=>i.ruc===ruc);
+  const w=document.getElementById("tablaPrevia");if(!w)return;
+  if(db.length>0){
+    w.classList.remove("hidden");
+    renderTablaC("tablaCPrev");
+    renderNotif("notifPrevList","notifPrevBox");
+  }else w.classList.add("hidden");
+}
+
+function aprobar(hash){
+  let db=getDB();const d=db.find(i=>i.hash===hash);
+  if(d){d.habilitado=true;saveDB(db);}
+  renderTablaC("tablaC");renderTablaC("tablaCPrev");
+  renderNotif("notifList","notifBox");renderNotif("notifPrevList","notifPrevBox");
+  toast("✓ Acceso aprobado. El auditor puede verificar.","ok");
+}
+
+// ── AUDITOR ───────────────────────────────────────────
+function initA(){
+  document.getElementById("zonaAuditor").classList.remove("hidden");
+  document.getElementById("zonaContador").classList.add("hidden");
+  document.getElementById("zonaPlanes").classList.add("hidden");
+  renderTablaA();
+}
+
+function renderTablaA(){
+  const db=getDB().filter(i=>i.ruc===ruc);
+  const el=document.getElementById("tablaA");
+  if(db.some(i=>i.habilitado))document.getElementById("verifZone").classList.remove("hidden");
+  if(!db.length){el.innerHTML=`<div style="padding:2rem;text-align:center;color:var(--muted);font-size:13px;">No hay documentos sellados para este RUC aún.</div>`;return;}
+  el.innerHTML=`<table><thead><tr>
+    <th>Documento</th><th>Protegido el</th><th>Estado</th><th style="text-align:right;">Acción</th>
+  </tr></thead><tbody>${db.map(it=>`<tr>
+    <td><span style="margin-right:6px;">${it.libroIcon||"📄"}</span><strong>${it.libro}</strong></td>
+    <td style="color:var(--muted);font-size:12px;">${it.fecha}</td>
+    <td>${badgeEstado(it)}</td>
+    <td style="text-align:right;">
+      ${it.habilitado
+        ?(it.link?`<button class="btn-sm" style="background:#F0FDF4;color:var(--green);border:1px solid #BBF7D0;" onclick="window.open('${it.link}','_blank')"><i class="fas fa-download"></i> Descargar</button>`:`<span style="font-size:11px;color:var(--muted-l);">Sin link Drive</span>`)
+        :it.solicitado
+          ?`<span style="font-size:12px;color:var(--orange);font-weight:600;">⏳ Esperando…</span>`
+          :`<button class="btn-sm" style="background:#EFF6FF;color:var(--blue);" onclick="pedirAcceso('${it.hash}')"><i class="fas fa-key" style="margin-right:4px;"></i>Pedir acceso</button>`
+      }
+    </td>
+  </tr>`).join("")}</tbody></table>`;
+}
+
+function pedirAcceso(hash){
+  let db=getDB();const d=db.find(i=>i.hash===hash);
+  if(d){d.solicitado=true;saveDB(db);}
+  renderTablaA();
+  toast("Solicitud enviada. El contador recibirá la notificación.","info");
+}
+
+async function verificar(f){
+  if(!f)return;
+  const buf=await f.arrayBuffer();
+  const hBuf=await crypto.subtle.digest("SHA-256",buf);
+  const hash=Array.from(new Uint8Array(hBuf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const db=getDB();
+  const m=db.find(i=>i.ruc===ruc&&i.hash===hash);
+  const res=document.getElementById("resVerif");
+  res.classList.remove("hidden");
+  if(m&&m.habilitado){
+    res.innerHTML=`<div class="result-ok">
+      <p style="font-size:1.2rem;font-weight:800;color:var(--green);margin-bottom:.5rem;">✅ Documento íntegro</p>
+      <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:1rem;">
+        El <strong>${m.libro}</strong> que subiste es <strong>exactamente el mismo</strong> que fue sellado el ${m.fecha}. No fue modificado.
+      </p>
+      <div style="background:var(--surface2);border-radius:10px;padding:.75rem 1rem;">
+        <span onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'" style="cursor:pointer;font-size:12px;font-weight:700;color:var(--green);">🔬 Ver huella técnica →</span>
+        <div style="display:none;margin-top:.5rem;font-family:'Courier New',monospace;font-size:11px;word-break:break-all;line-height:1.7;color:var(--muted);">
+          SHA-256: ${hash}<br>Sello: ${m.txid}
+          ${m.explorerUrl?`<br><a href="${m.explorerUrl}" target="_blank" style="color:var(--sky);">Ver en blockchain →</a>`:""}
+        </div>
+      </div>
+      <button class="btn-sm" style="background:var(--green);color:#fff;margin-top:1rem;" onclick="dlActa('${m.hash}')">
+        <i class="fas fa-file-pdf"></i> Descargar Acta de Conformidad
+      </button>
+    </div>`;
+    toast("✓ Integridad verificada.","ok");
+  }else{
+    res.innerHTML=`<div class="result-fail">
+      <p style="font-size:1.2rem;font-weight:800;color:var(--red);margin-bottom:.5rem;">❌ No coincide o sin acceso</p>
+      <p style="font-size:13px;color:var(--muted);line-height:1.5;">
+        El archivo no coincide con ningún documento sellado, o aún no tienes acceso aprobado. Pide acceso al contador.
+      </p>
+    </div>`;
+    toast("No coincide o sin acceso.","err");
+  }
+}
+
+// ── PLANES ────────────────────────────────────────────
+function mostrarPlanes(){
+  document.getElementById("zonaContador").classList.add("hidden");
+  document.getElementById("zonaAuditor").classList.add("hidden");
+  document.getElementById("zonaPlanes").classList.remove("hidden");
+}
+
+// Enlazar botón sidebar
+document.addEventListener("DOMContentLoaded",()=>{
+  const btn=document.getElementById("sPlanes")?.querySelector("button");
+  if(btn)btn.addEventListener("click",mostrarPlanes);
+});
+
+function calcularPlan(){
+  const v=document.getElementById("calcClientes").value;
+  if(!v)return;
+  const planes={
+    "1":{nombre:"Plan Independiente · S/79/mes",desc:"100 sellos/mes — perfecto para tus 1-3 clientes",btn:"Independiente S/79"},
+    "5":{nombre:"Plan Independiente · S/79/mes",desc:"100 sellos/mes — cubre bien 4-8 clientes activos",btn:"Independiente S/79"},
+    "10":{nombre:"Plan Estudio · S/149/mes",desc:"400 sellos/mes — diseñado para estudios contables",btn:"Estudio S/149"},
+    "20":{nombre:"Plan Corporativo · Consultar precio",desc:"Sellos ilimitados para estudios grandes",btn:"Corporativo"},
+  };
+  const p=planes[v];calcPlanActual=p;
+  document.getElementById("calcPlanNombre").textContent=p.nombre;
+  document.getElementById("calcPlanDesc").textContent=p.desc;
+  document.getElementById("calcResultado").classList.remove("hidden");
+}
+
+function consultarPlan(plan){
+  const msg=encodeURIComponent(`Hola, me interesa el ${plan} de Certime. ¿Pueden darme más información?`);
+  window.open(`https://wa.me/51999999999?text=${msg}`,"_blank");
+}
+
+function consultarPlanCalc(){
+  if(calcPlanActual)consultarPlan(calcPlanActual.btn);
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function badgeEstado(it){
+  if(it.habilitado)return`<span class="badge abierto">✓ Acceso abierto</span>`;
+  if(it.solicitado)return`<span class="badge pendiente">⏳ Pendiente</span>`;
+  return`<span class="badge privado">🔒 Privado</span>`;
+}
+
+function getDB(){return JSON.parse(localStorage.getItem("certime_v100")||"[]");}
+function saveDB(db){localStorage.setItem("certime_v100",JSON.stringify(db));}
+function getUserData(){return JSON.parse(localStorage.getItem("certime_user_"+ruc)||'{"sellos":3,"plan":"Prueba"}');}
+function saveUserData(d){localStorage.setItem("certime_user_"+ruc,JSON.stringify(d));}
+function resetDB(){if(confirm("¿Borrar todos los datos de prueba?")){["certime_v100","certime_user_"+ruc].forEach(k=>localStorage.removeItem(k));location.reload();}}
+
+function toast(msg,type="info"){
+  const t=document.createElement("div");
+  t.className=`toast ${type}`;t.textContent=msg;
+  document.getElementById("toasts").appendChild(t);
+  setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .3s";setTimeout(()=>t.remove(),300);},4500);
+}
+
+// ── BLOCKCHAIN DIRECTO ────────────────────────────────
+async function anchorOnChain(hash){
+  const p=detectP();
+  const a=await p.request({method:"eth_accounts"});
+  walletAddr=a?.[0]||null;
+  if(!walletAddr)throw Object.assign(new Error("Wallet no conectada"),{code:4100});
+  const h=await p.request({method:"eth_chainId"});
+  chainId=parseInt(h,16);
+  if(!NETS[chainId])throw Object.assign(new Error("Red no soportada"),{code:4902});
+  const sb=new TextEncoder().encode(hash);
+  const hex=Array.from(sb).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const rem=64-(hex.length%64);const pad=hex+(rem===64?"":"0".repeat(rem));
+  const data="0x4cd9c6c1"
+    +"0000000000000000000000000000000000000000000000000000000000000020"
+    +BigInt(sb.length).toString(16).padStart(64,"0")+pad;
+  return await p.request({method:"eth_sendTransaction",
+    params:[{from:walletAddr,to:"0x0000000000000000000000000000000000000000",data}]});
+}
+
+// ── PDF ───────────────────────────────────────────────
+function dlCert(hash){const it=getDB().find(i=>i.hash===hash);if(it)genPDF(it,"CERTIFICADO DE INTEGRIDAD");}
+function dlActa(hash){const it=getDB().find(i=>i.hash===hash);if(it)genPDF(it,"ACTA DE CONFORMIDAD");}
+function genPDF(it,tipo){
+  const doc=new jsPDF();
+  doc.setFillColor(13,31,60);doc.rect(0,0,210,297,"F");
+  doc.setTextColor(59,130,246);doc.setFontSize(20);doc.setFont("helvetica","bold");doc.text("CERTIME",20,22);
+  doc.setTextColor(200,200,220);doc.setFontSize(10);doc.setFont("helvetica","normal");
+  doc.text(tipo+(it.modo==="demo"?" [DEMO]":""),20,32);
+  doc.setDrawColor(37,99,176);doc.line(20,38,190,38);
+  let y=50;
+  [["Profesional:",it.nombre],["Empresa:",it.empresa],["RUC:",it.ruc],
+   ["Documento:",it.libro],["Protegido el:",it.fecha],["Modo:",it.modo==="testnet"?"Syscoin Testnet":it.modo==="wallet"?"Blockchain Real":"Demo"]
+  ].forEach(([k,v])=>{
+    doc.setFontSize(9);doc.setTextColor(100,120,160);doc.text(k,20,y);
+    doc.setTextColor(240,245,255);doc.text(v||"—",70,y);y+=10;
+  });
+  y+=4;
+  doc.setTextColor(100,120,160);doc.text("SHA-256:",20,y);y+=8;
+  doc.setTextColor(59,130,246);doc.setFont("courier","bold");doc.setFontSize(7);
+  doc.text(it.hash.slice(0,40),20,y);doc.text(it.hash.slice(40),20,y+6);y+=16;
+  doc.setTextColor(100,120,180);doc.setFont("helvetica","normal");doc.setFontSize(8);
+  doc.text("Sello: "+it.txid,20,y);y+=14;
+  doc.setTextColor(34,197,94);doc.setFont("helvetica","bold");doc.setFontSize(9);
+  doc.text("DOCUMENTO INMUTABLE · CERTIME PROTOCOL · SYSCOIN NEVM",20,y);
+  doc.save(`${tipo.replace(/ /g,"_")}_${it.libro.replace(/ /g,"_")}.pdf`);
+}
+
+// ── INIT ──────────────────────────────────────────────
+window.addEventListener("load",async()=>{
+  const p=detectP();if(!p)return;
+  try{
+    const a=await p.request({method:"eth_accounts"});
+    if(a?.length>0){
+      walletAddr=a[0];
+      const h=await p.request({method:"eth_chainId"});
+      chainId=parseInt(h,16);isDemoMode=false;updateWUI();
+    }
+  }catch(e){}
+});
+</script>
+</body>
+</html>
